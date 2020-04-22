@@ -1,0 +1,8 @@
+# Rename this file to config.yml or use -c flag
+server:
+  host: 0.0.0.0
+  port: 8080
+twilio:
+  sid: AC0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx # Replace with your Twilio Account SID
+  token: f87xx0x0x0x0x0x0x0x0x0x0x0x0x0 # Replace with your Twilio Account Token
+  whatsapp_from: whatsapp:+14155238886 # Replace with your Twilio WhatsApp mobile number

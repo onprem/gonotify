@@ -17,5 +17,4 @@ func NewClient(sid, token string) *Twilio {
 
 func (t *Twilio) bootstrapRequest(r *http.Request) {
 	r.SetBasicAuth(t.AccountSID, t.AuthToken)
-
 }
