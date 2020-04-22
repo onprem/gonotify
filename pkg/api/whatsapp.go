@@ -6,12 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Message struct {
+type message struct {
 	Body string `json:"body" binding:"required"`
 }
 
 func (api *API) handleWhatsApp(c *gin.Context) {
-	var json Message
+	var json message
 	if err := c.ShouldBind(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
