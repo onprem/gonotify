@@ -30,16 +30,17 @@ func (t *Twilio) MakeRequest(path string, data url.Values) (map[string]interface
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 && resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("Error occured during request, status: %s", resp.Status)
-	}
-
 	var result map[string]interface{}
 
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&result)
 	if err != nil {
 		return nil, fmt.Errorf("Error decoding response")
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println(result)
+		return nil, fmt.Errorf("twilio api, status: %s, code: %s msg: %s", resp.Status, result["code"], result["message"])
 	}
 
 	return result, nil

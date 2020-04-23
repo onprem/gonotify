@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/nyaruka/phonenumbers"
@@ -22,5 +21,5 @@ func parsePhone(phone string) (string, error) {
 		return "", fmt.Errorf("invalid phone number")
 	}
 
-	return strings.ReplaceAll(phonenumbers.Format(ph, phonenumbers.INTERNATIONAL), " ", ""), nil
+	return phonenumbers.Format(ph, phonenumbers.E164), nil
 }

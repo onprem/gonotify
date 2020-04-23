@@ -23,9 +23,13 @@ func (t *Twilio) SendWhatsApp(from, to, body string) error {
 	data.Set("From", from)
 	data.Set("Body", body)
 
-	_, err := t.MakeRequest(messagePath, data)
+	resp, err := t.MakeRequest(messagePath, data)
 	if err != nil {
 		return err
+	}
+
+	if resp["status"] == "failed" || resp["status"] == "undelivered" {
+		return fmt.Errorf("msg: %s code: %s", resp["error_message"], resp["error_code"])
 	}
 
 	return nil
