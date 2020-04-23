@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-kit/kit/log/level"
 )
 
 type message struct {
@@ -22,6 +23,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 	err := api.TwilioClient.SendWhatsApp(api.WhatsAppFrom, "whatsapp:+919950591608", json.Body)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
+		level.Error(*api.logger).Log("err", err)
 		return
 	}
 

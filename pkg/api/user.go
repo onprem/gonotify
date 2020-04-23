@@ -2,64 +2,92 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 // User models a user in database
 type User struct {
-	ID    int
-	Name  string
-	Email string
-	Hash  string
+	ID           int
+	Name         string
+	Phone        string
+	Hash         string
+	DefaultGroup int
+	Verified     int
+}
+
+// VerifyUser Models the verifyUser table
+type VerifyUser struct {
+	ID       int
+	UserID   int
+	NumberID int
+	Code     string
 }
 
 func (api *API) handleLogin(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "login")
 	var user User
 
 	type input struct {
-		Email    string `json:"email" binding:"required"`
+		Phone    string `json:"phone" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 	var i input
 
 	err := c.BindJSON(&i)
 	if err != nil {
+		level.Error(logger).Log("err", err)
 		return
 	}
+
+	ph, err := parsePhone(i.Phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid phone number",
+		})
+		return
+	}
+
+	i.Phone = ph
+
 	err = api.DB.QueryRow(
-		"SELECT id, name, email, hash FROM users WHERE email = ?",
-		i.Email,
-	).Scan(&user.ID, &user.Name, &user.Email, &user.Hash)
+		"SELECT id, name, phone, hash FROM users WHERE phone = ?",
+		i.Phone,
+	).Scan(&user.ID, &user.Name, &user.Phone, &user.Hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "invalid email or password",
+				"error": "invalid phone number or password",
 			})
 		} else {
 			c.Status(http.StatusInternalServerError)
+			level.Error(logger).Log("err", err)
 		}
 		return
 	}
 
 	if i.Password != user.Hash {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid email or password",
+			"error": "invalid phone number or password",
 		})
 		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
-		"email": user.Email,
-		"exp":   time.Now().Add(time.Hour * 24 * 15).Unix(),
+		"id":  user.ID,
+		"exp": time.Now().Add(time.Hour * 24 * 15).Unix(),
 	})
 
 	tokenStr, err := token.SignedString(api.JWTSecret)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
 		return
 	}
 
@@ -70,9 +98,10 @@ func (api *API) handleLogin(c *gin.Context) {
 }
 
 func (api *API) handleRegister(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "register")
 	type input struct {
 		Name     string `json:"name" binding:"required"`
-		Email    string `json:"email" binding:"required"`
+		Phone    string `json:"phone" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 	var i input
@@ -82,35 +111,126 @@ func (api *API) handleRegister(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	level.Debug(logger).Log("name", i.Name, "phone", i.Phone)
 
-	err = api.DB.QueryRow("SELECT id FROM users WHERE email = ?", i.Email).Scan(&tempID)
+	ph, err := parsePhone(i.Phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid phone number",
+		})
+		return
+	}
+
+	i.Phone = ph
+	wappNumber := fmt.Sprintf("whatsapp:%s", ph)
+	level.Debug(logger).Log("parsedPhone", ph, "wappNumber", wappNumber)
+
+	err = api.DB.QueryRow("SELECT id FROM users WHERE phone = ?", i.Phone).Scan(&tempID)
 
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "email already exists",
+			"error": "phone number already exists",
 		})
 		return
 	}
 	if err != sql.ErrNoRows {
 		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
 		return
 	}
 
-	stmt, err := api.DB.Prepare("INSERT INTO users(name, email, hash) VALUES(?, ?, ?)")
+	code := getVerificationCode()
+	level.Debug(logger).Log("verification code", code)
+
+	tx, err := api.DB.Begin()
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(
+		"INSERT INTO users(name, phone, hash, defaultGroup, verified) VALUES (?, ?, ?, ?, ?)",
+		i.Name,
+		i.Phone,
+		i.Password,
+		0,
+		0,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
 		return
 	}
 
-	res, err := stmt.Exec(i.Name, i.Email, i.Password)
+	uID, err := res.LastInsertId()
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
 		return
 	}
+
+	groupRes, err := tx.Exec("INSERT INTO groups(userID, name) VALUES(?, ?)", uID, "default")
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	gID, err := groupRes.LastInsertId()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	numRes, err := tx.Exec(
+		"INSERT INTO numbers(groupID, phone, verified, lastMsgReceived) VALUES(?, ?, ?, ?)",
+		gID,
+		i.Phone,
+		0,
+		time.RFC3339,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	nID, err := numRes.LastInsertId()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = tx.Exec(
+		"INSERT INTO userVerify(userID, numberID, code) VALUES(?, ?, ?)",
+		uID,
+		nID,
+		code,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	tx.Commit()
 
 	id, err := res.LastInsertId()
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	msg := fmt.Sprintf("Your GoNotify code is %s", code)
+	err = api.TwilioClient.SendWhatsApp(api.WhatsAppFrom, wappNumber, msg)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
 		return
 	}
 
@@ -119,5 +239,102 @@ func (api *API) handleRegister(c *gin.Context) {
 		"user": gin.H{
 			"id": id,
 		},
+	})
+}
+
+func (api *API) handleUserVerify(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "userVerify")
+
+	type input struct {
+		Phone string `json:"phone" binding:"required"`
+		Code  string `json:"code" binding:"required"`
+	}
+	var i input
+	err := c.BindJSON(&i)
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	ph, err := parsePhone(i.Phone)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid phone number",
+		})
+		return
+	}
+
+	i.Phone = ph
+	level.Debug(logger).Log("phone", ph, "code", i.Code)
+
+	var tmpID int
+	err = api.DB.QueryRow(
+		"SELECT id FROM users WHERE phone = ?",
+		i.Phone,
+	).Scan(&tmpID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "cannot find user with given phone number",
+			})
+			return
+		}
+		level.Error(logger).Log("err", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	var verify VerifyUser
+	err = api.DB.QueryRow(
+		"SELECT id, userID, numberID, code FROM userVerify WHERE userID = ?",
+		tmpID,
+	).Scan(&verify.ID, &verify.UserID, &verify.NumberID, &verify.Code)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	if i.Code != verify.Code {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid verification code",
+		})
+		return
+	}
+
+	tx, err := api.DB.Begin()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
+		"UPDATE users SET verified = ? WHERE id = ?",
+		1,
+		tmpID,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = tx.Exec(
+		"UPDATE numbers SET verified = ? WHERE id = ?",
+		1,
+		verify.NumberID,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	tx.Commit()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "successfully verified user",
 	})
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-kit/kit/log"
 	"github.com/prmsrswt/gonotify/pkg/twilio"
 )
 
@@ -19,11 +20,12 @@ type API struct {
 	WhatsAppFrom string
 	TwilioClient *twilio.Twilio
 	DB           *sql.DB
+	logger       *log.Logger
 }
 
 // NewAPI creates a new API instance
-func NewAPI(host, port, jwtSecret, twilioSID, twilioToken, whatsAppFrom string, db *sql.DB) (*API, error) {
-	_, err := db.Exec("CREATE TABLE IF NOT EXISTS users (id integer primary key autoincrement not null, name text, email text unique, hash text)")
+func NewAPI(host, port, jwtSecret, twilioSID, twilioToken, whatsAppFrom string, db *sql.DB, logger *log.Logger) (*API, error) {
+	err := bootstrapDB(db)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +38,7 @@ func NewAPI(host, port, jwtSecret, twilioSID, twilioToken, whatsAppFrom string, 
 		WhatsAppFrom: whatsAppFrom,
 		TwilioClient: twilio.NewClient(twilioSID, twilioToken),
 		DB:           db,
+		logger:       logger,
 	}, nil
 }
 
@@ -53,6 +56,7 @@ func (api *API) Register() {
 
 		v1.POST("/login", api.handleLogin)
 		v1.POST("/register", api.handleRegister)
+		v1.POST("/verify", api.handleUserVerify)
 
 		v1.POST("/send", func(c *gin.Context) {
 			c.Request.URL.Path = c.Request.URL.Path + "/whatsapp"

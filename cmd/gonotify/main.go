@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/prmsrswt/gonotify/pkg/api"
@@ -44,6 +46,10 @@ func main() {
 		handleError(err)
 	}
 
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = level.NewFilter(logger, level.AllowAll())
+	logger = log.With(logger, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
+
 	gnAPI, err := api.NewAPI(
 		cfg.Server.Host,
 		cfg.Server.Port,
@@ -52,6 +58,7 @@ func main() {
 		cfg.Twilio.Token,
 		cfg.Twilio.WhatsAppFrom,
 		db,
+		&logger,
 	)
 	if err != nil {
 		handleError(err)
