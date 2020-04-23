@@ -83,7 +83,7 @@ func (api *API) withAuth() gin.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			c.Set("email", claims["email"])
+			c.Set("id", claims["id"])
 			c.Next()
 		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -96,6 +96,6 @@ func (api *API) withAuth() gin.HandlerFunc {
 func handlePing(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
-		"email":   c.MustGet("email"),
+		"id":      c.MustGet("id"),
 	})
 }

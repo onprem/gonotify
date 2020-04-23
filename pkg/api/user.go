@@ -15,12 +15,11 @@ import (
 
 // User models a user in database
 type User struct {
-	ID           int
-	Name         string
-	Phone        string
-	Hash         string
-	DefaultGroup int
-	Verified     int
+	ID       int
+	Name     string
+	Phone    string
+	Hash     string
+	Verified int
 }
 
 // VerifyUser Models the verifyUser table
@@ -142,6 +141,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		return
 	}
 
+	oldTime := time.Date(1950, time.January, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339)
 	code := getVerificationCode()
 
 	hashByte, err := bcrypt.GenerateFromPassword([]byte(i.Password), bcrypt.DefaultCost)
@@ -163,11 +163,10 @@ func (api *API) handleRegister(c *gin.Context) {
 	defer tx.Rollback()
 
 	res, err := tx.Exec(
-		"INSERT INTO users(name, phone, hash, defaultGroup, verified) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO users(name, phone, hash, verified) VALUES (?, ?, ?, ?)",
 		i.Name,
 		i.Phone,
 		hash,
-		0,
 		0,
 	)
 	if err != nil {
@@ -202,7 +201,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		gID,
 		i.Phone,
 		0,
-		time.RFC3339,
+		oldTime,
 	)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)

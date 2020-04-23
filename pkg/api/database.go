@@ -10,7 +10,6 @@ func bootstrapDB(db *sql.DB) error {
 		name TEXT,
 		phone TEXT UNIQUE,
 		hash TEXT,
-		defaultGroup INTEGER,
 		verified BOOLEAN NOT NULL CHECK (verified IN (0,1)))`,
 	)
 	if err != nil {
