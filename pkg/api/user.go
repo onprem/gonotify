@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // User models a user in database
@@ -72,7 +73,9 @@ func (api *API) handleLogin(c *gin.Context) {
 		return
 	}
 
-	if i.Password != user.Hash {
+	err = bcrypt.CompareHashAndPassword([]byte(user.Hash), []byte(i.Password))
+
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid phone number or password",
 		})
@@ -140,6 +143,15 @@ func (api *API) handleRegister(c *gin.Context) {
 	}
 
 	code := getVerificationCode()
+
+	hashByte, err := bcrypt.GenerateFromPassword([]byte(i.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+	hash := string(hashByte)
+
 	level.Debug(logger).Log("verification code", code)
 
 	tx, err := api.DB.Begin()
@@ -154,7 +166,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		"INSERT INTO users(name, phone, hash, defaultGroup, verified) VALUES (?, ?, ?, ?, ?)",
 		i.Name,
 		i.Phone,
-		i.Password,
+		hash,
 		0,
 		0,
 	)
