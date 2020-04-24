@@ -7,5 +7,9 @@ twilio:
   sid: AC0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx # Replace with your Twilio Account SID
   token: f87xx0x0x0x0x0x0x0x0x0x0x0x0x0 # Replace with your Twilio Account Token
   whatsapp_from: whatsapp:+14155238886 # Replace with your Twilio WhatsApp mobile number
+  # Username password for basic auth in Twilio webhook
+  # use https://webhook_user:webhook_password@example.com/api/v1/incoming as webhook url
+  webhook_user: twilio
+  webhook_password: whookpass
 database:
   path: gonotify.db # path for sqlite3 database

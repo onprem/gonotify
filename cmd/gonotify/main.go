@@ -23,6 +23,8 @@ type config struct {
 		SID          string `yaml:"sid" env:"TWILIO_SID"`
 		Token        string `yaml:"token" env:"TWILIO_TOKEN"`
 		WhatsAppFrom string `yaml:"whatsapp_from" env:"TWILIO_WHATSAPP_FROM"`
+		WebhookUser  string `yaml:"webhook_user" env:"TWILIO_WEBHOOK_USER"`
+		WebhookPass  string `yaml:"webhook_password" env:"TWILIO_WEBHOOK_PASS"`
 	} `yaml:"twilio"`
 	Database struct {
 		Path string `yaml:"path" env:"DATABASE_PATH" env-default:"gonotify.db"`
@@ -56,6 +58,8 @@ func main() {
 		cfg.Server.JWTSecret,
 		cfg.Twilio.SID,
 		cfg.Twilio.Token,
+		cfg.Twilio.WebhookUser,
+		cfg.Twilio.WebhookPass,
 		cfg.Twilio.WhatsAppFrom,
 		db,
 		&logger,

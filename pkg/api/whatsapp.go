@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,13 +14,14 @@ import (
 	"github.com/prmsrswt/gonotify/pkg/twilio"
 )
 
-type message struct {
-	Group string `json:"group" binding:"-"`
-	Body  string `json:"body" binding:"required"`
-}
-
 func (api *API) handleWhatsApp(c *gin.Context) {
 	logger := log.With(*api.logger, "route", "whatsapp")
+
+	type message struct {
+		Group string `json:"group" binding:"-"`
+		Body  string `json:"body" binding:"required"`
+	}
+
 	var json message
 	var groupID int
 
@@ -149,4 +152,112 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 	}
 
 	return nil
+}
+
+func (api *API) handleIncoming(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "incoming")
+
+	type input struct {
+		From string `form:"From"`
+		Body string `form:"Body"`
+	}
+	var i input
+
+	err := c.ShouldBind(&i)
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	number := strings.TrimPrefix(i.From, "whatsapp:")
+
+	level.Debug(logger).Log("from", i.From, "body", i.Body)
+
+	var numID int
+	err = api.DB.QueryRow(
+		`SELECT id FROM numbers WHERE phone = ?`,
+		number,
+	).Scan(&numID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			level.Info(logger).Log("from", i.From, "msg", "messagse received from unknown number")
+			c.Status(http.StatusNoContent)
+			return
+		}
+		level.Error(logger).Log("err", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = api.DB.Exec(
+		`UPDATE numbers SET lastMsgReceived = ? WHERE id = ?`,
+		time.Now().Format(time.RFC3339),
+		numID,
+	)
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	type pending struct {
+		id     int
+		body   string
+		timeSt string
+	}
+
+	rows, err := api.DB.Query(
+		`SELECT pendingMsgs.id, notifications.body, notifications.timeSt FROM pendingMsgs
+		INNER JOIN notifications ON pendingMsgs.notifID = notifications.id
+		WHERE pendingMsgs.numberID = ?`,
+		numID,
+	)
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var msgs []pending
+	body := "You have following notifications:"
+	var ids []string
+
+	for rows.Next() {
+		var p pending
+		err = rows.Scan(&p.id, &p.body, &p.timeSt)
+		if err != nil {
+			level.Error(logger).Log("err", err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		msgs = append(msgs, p)
+		body = body + "\n\n" + p.body
+		ids = append(ids, strconv.Itoa(p.id))
+	}
+
+	if len(msgs) == 0 {
+		body = "You have no new notifications"
+	}
+
+	err = api.TwilioClient.SendWhatsApp(api.WhatsAppFrom, i.From, body)
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if len(msgs) > 0 {
+		_, err := api.DB.Exec(
+			`DELETE FROM pendingMsgs WHERE id IN (` + strings.Join(ids, ", ") + `)`,
+		)
+		if err != nil {
+			level.Error(logger).Log("err", err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	c.Status(http.StatusNoContent)
 }

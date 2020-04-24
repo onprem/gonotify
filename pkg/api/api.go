@@ -13,32 +13,46 @@ import (
 
 // API represents a API config object
 type API struct {
-	Host         string
-	Port         string
-	JWTSecret    []byte
-	Gin          *gin.Engine
-	WhatsAppFrom string
-	TwilioClient *twilio.Twilio
-	DB           *sql.DB
-	logger       *log.Logger
+	Host           string
+	Port           string
+	JWTSecret      []byte
+	Gin            *gin.Engine
+	WhatsAppFrom   string
+	TwilioClient   *twilio.Twilio
+	WebHookAccount gin.Accounts
+	DB             *sql.DB
+	logger         *log.Logger
 }
 
 // NewAPI creates a new API instance
-func NewAPI(host, port, jwtSecret, twilioSID, twilioToken, whatsAppFrom string, db *sql.DB, logger *log.Logger) (*API, error) {
+func NewAPI(
+	host,
+	port,
+	jwtSecret,
+	twilioSID,
+	twilioToken,
+	twilioWebHookUser,
+	twilioWebHookPass,
+	whatsAppFrom string,
+	db *sql.DB,
+	logger *log.Logger,
+) (*API, error) {
+
 	err := bootstrapDB(db)
 	if err != nil {
 		return nil, err
 	}
 
 	return &API{
-		Host:         host,
-		Port:         port,
-		JWTSecret:    []byte(jwtSecret),
-		Gin:          gin.Default(),
-		WhatsAppFrom: whatsAppFrom,
-		TwilioClient: twilio.NewClient(twilioSID, twilioToken),
-		DB:           db,
-		logger:       logger,
+		Host:           host,
+		Port:           port,
+		JWTSecret:      []byte(jwtSecret),
+		Gin:            gin.Default(),
+		WhatsAppFrom:   whatsAppFrom,
+		TwilioClient:   twilio.NewClient(twilioSID, twilioToken),
+		WebHookAccount: gin.Accounts{twilioWebHookUser: twilioWebHookPass},
+		DB:             db,
+		logger:         logger,
 	}, nil
 }
 
@@ -58,12 +72,13 @@ func (api *API) Register() {
 		v1.POST("/register", api.handleRegister)
 		v1.POST("/verify", api.handleUserVerify)
 
-		v1.POST("/send", func(c *gin.Context) {
+		v1.POST("/send", api.withAuth(), func(c *gin.Context) {
 			c.Request.URL.Path = c.Request.URL.Path + "/whatsapp"
 			api.Gin.HandleContext(c)
 		})
 
 		v1.POST("/send/whatsapp", api.withAuth(), api.handleWhatsApp)
+		v1.POST("/incoming", gin.BasicAuth(api.WebHookAccount), api.handleIncoming)
 	}
 }
 
