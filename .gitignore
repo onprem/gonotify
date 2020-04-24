@@ -16,3 +16,4 @@
 
 config/config.yml
 gonotify.db
+cmd/gonotify/gonotify

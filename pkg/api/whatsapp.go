@@ -46,6 +46,12 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 		json.Group,
 	).Scan(&groupID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "given group doesn't exist",
+			})
+			return
+		}
 		c.AbortWithStatus(http.StatusInternalServerError)
 		level.Error(logger).Log("err", err)
 		return
@@ -81,7 +87,9 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 	}
 
 	rows, err := db.Query(
-		`SELECT id, phone, verified, lastMsgReceived FROM numbers WHERE groupID = ?`,
+		`SELECT whatsappNodes.numberID, whatsappNodes.lastMsgReceived, numbers.phone, numbers.verified FROM whatsappNodes
+		INNER JOIN numbers ON whatsappNodes.numberID = numbers.id
+		WHERE whatsappNodes.groupID = ?`,
 		groupID,
 	)
 	if err != nil {
@@ -101,7 +109,7 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 		var id int
 		var verified bool
 
-		err := rows.Scan(&id, &phone, &verified, &lastMsgReceived)
+		err := rows.Scan(&id, &lastMsgReceived, &phone, &verified)
 		if err != nil {
 			return err
 		}
@@ -163,7 +171,7 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 			continue
 		}
 
-		err = tc.SendWhatsApp(from, v.phone, msg.String()) // Replace with actual Template
+		err = tc.SendWhatsApp(from, v.phone, msg.String())
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -196,26 +204,37 @@ func (api *API) handleIncoming(c *gin.Context) {
 
 	level.Debug(logger).Log("from", i.From, "body", i.Body)
 
-	var numID int
-	err = api.DB.QueryRow(
+	// var numID int
+	// err = api.DB.QueryRow(
+	// 	`SELECT id FROM numbers WHERE phone = ?`,
+	// 	number,
+	// ).Scan(&numID)
+	// if err != nil {
+	// 	if err == sql.ErrNoRows {
+	// 		level.Info(logger).Log("from", i.From, "msg", "messagse received from unknown number")
+	// 		c.Status(http.StatusNoContent)
+	// 		return
+	// 	}
+	// 	level.Error(logger).Log("err", err)
+	// 	c.Status(http.StatusInternalServerError)
+	// 	return
+	// }
+
+	rows, err := api.DB.Query(
 		`SELECT id FROM numbers WHERE phone = ?`,
 		number,
-	).Scan(&numID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			level.Info(logger).Log("from", i.From, "msg", "messagse received from unknown number")
-			c.Status(http.StatusNoContent)
-			return
-		}
-		level.Error(logger).Log("err", err)
-		c.Status(http.StatusInternalServerError)
-		return
+	)
+
+	var numIDs []string
+	for rows.Next() {
+		var n int
+		rows.Scan(&n)
+		numIDs = append(numIDs, strconv.Itoa(n))
 	}
 
 	_, err = api.DB.Exec(
-		`UPDATE numbers SET lastMsgReceived = ? WHERE id = ?`,
+		`UPDATE whatsappNodes SET lastMsgReceived = ? WHERE numberID IN(`+strings.Join(numIDs, ", ")+`)`,
 		time.Now().Format(time.RFC3339),
-		numID,
 	)
 	if err != nil {
 		level.Error(logger).Log("err", err)
@@ -229,11 +248,10 @@ func (api *API) handleIncoming(c *gin.Context) {
 		timeSt string
 	}
 
-	rows, err := api.DB.Query(
+	rows, err = api.DB.Query(
 		`SELECT pendingMsgs.id, notifications.body, notifications.timeSt FROM pendingMsgs
 		INNER JOIN notifications ON pendingMsgs.notifID = notifications.id
-		WHERE pendingMsgs.numberID = ?`,
-		numID,
+		WHERE pendingMsgs.numberID IN(` + strings.Join(numIDs, ", ") + `)`,
 	)
 	if err != nil {
 		level.Error(logger).Log("err", err)

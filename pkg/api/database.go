@@ -25,12 +25,25 @@ func bootstrapDB(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS numbers(
-		id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-		groupID INTEGER NOT NULL,
-		phone TEXT UNIQUE,
-		verified BOOLEAN NOT NULL CHECK (verified IN (0,1)),
-		lastMsgReceived TEXT)`,
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS
+		numbers(
+			id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			userID INTEGER NOT NULL,
+			phone TEXT UNIQUE,
+			verified BOOLEAN NOT NULL CHECK (verified IN (0,1))
+		)`,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS
+		whatsappNodes(
+			id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			groupID INTEGER NOT NULL,
+			numberID INTEGER NOT NULL,
+			lastMsgReceived TEXT
+		)`,
 	)
 	if err != nil {
 		return err

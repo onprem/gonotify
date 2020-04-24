@@ -198,11 +198,10 @@ func (api *API) handleRegister(c *gin.Context) {
 	}
 
 	numRes, err := tx.Exec(
-		"INSERT INTO numbers(groupID, phone, verified, lastMsgReceived) VALUES(?, ?, ?, ?)",
-		gID,
+		"INSERT INTO numbers(phone, userID, verified) VALUES(?, ?, ?)",
 		i.Phone,
+		uID,
 		0,
-		oldTime,
 	)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -211,6 +210,18 @@ func (api *API) handleRegister(c *gin.Context) {
 	}
 
 	nID, err := numRes.LastInsertId()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = tx.Exec(
+		"INSERT INTO whatsappNodes(numberID, groupID, lastMsgReceived) VALUES(?, ?, ?)",
+		nID,
+		gID,
+		oldTime,
+	)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		level.Error(logger).Log("err", err)
@@ -230,13 +241,6 @@ func (api *API) handleRegister(c *gin.Context) {
 	}
 
 	tx.Commit()
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		level.Error(logger).Log("err", err)
-		return
-	}
 
 	type TplInput struct {
 		Code string
@@ -262,7 +266,7 @@ func (api *API) handleRegister(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "successfully registered",
 		"user": gin.H{
-			"id": id,
+			"id": uID,
 		},
 	})
 }
@@ -293,10 +297,11 @@ func (api *API) handleUserVerify(c *gin.Context) {
 	level.Debug(logger).Log("phone", ph, "code", i.Code)
 
 	var tmpID int
+	var tmpVerified bool
 	err = api.DB.QueryRow(
-		"SELECT id FROM users WHERE phone = ?",
+		"SELECT id, verified FROM users WHERE phone = ?",
 		i.Phone,
-	).Scan(&tmpID)
+	).Scan(&tmpID, &tmpVerified)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -306,6 +311,13 @@ func (api *API) handleUserVerify(c *gin.Context) {
 		}
 		level.Error(logger).Log("err", err)
 		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if tmpVerified {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "user is already verified",
+		})
 		return
 	}
 
@@ -350,6 +362,16 @@ func (api *API) handleUserVerify(c *gin.Context) {
 		"UPDATE numbers SET verified = ? WHERE id = ?",
 		1,
 		verify.NumberID,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = tx.Exec(
+		"DELETE FROM userVerify WHERE userID = ?",
+		tmpID,
 	)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
