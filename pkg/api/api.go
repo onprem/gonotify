@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -13,27 +14,28 @@ import (
 
 // API represents a API config object
 type API struct {
-	Host           string
-	Port           string
-	JWTSecret      []byte
-	Gin            *gin.Engine
-	WhatsAppFrom   string
-	TwilioClient   *twilio.Twilio
-	WebHookAccount gin.Accounts
-	DB             *sql.DB
-	logger         *log.Logger
+	conf         Config
+	Gin          *gin.Engine
+	TwilioClient *twilio.Twilio
+	DB           *sql.DB
+	logger       *log.Logger
+}
+
+// Config represents a configuration object for this API
+type Config struct {
+	TwilioSID             string
+	TwilioToken           string
+	Host                  string
+	Port                  string
+	JWTSecret             []byte
+	WhatsAppFrom          string
+	WebHookAccount        gin.Accounts
+	VerifyTmpl, NotifTmpl *template.Template
 }
 
 // NewAPI creates a new API instance
 func NewAPI(
-	host,
-	port,
-	jwtSecret,
-	twilioSID,
-	twilioToken,
-	twilioWebHookUser,
-	twilioWebHookPass,
-	whatsAppFrom string,
+	conf Config,
 	db *sql.DB,
 	logger *log.Logger,
 ) (*API, error) {
@@ -44,22 +46,18 @@ func NewAPI(
 	}
 
 	return &API{
-		Host:           host,
-		Port:           port,
-		JWTSecret:      []byte(jwtSecret),
-		Gin:            gin.Default(),
-		WhatsAppFrom:   whatsAppFrom,
-		TwilioClient:   twilio.NewClient(twilioSID, twilioToken),
-		WebHookAccount: gin.Accounts{twilioWebHookUser: twilioWebHookPass},
-		DB:             db,
-		logger:         logger,
+		conf:         conf,
+		Gin:          gin.Default(),
+		TwilioClient: twilio.NewClient(conf.TwilioSID, conf.TwilioToken),
+		DB:           db,
+		logger:       logger,
 	}, nil
 }
 
 // Run is a wrapper around Register and Gin.Run()
 func (api *API) Run() {
 	api.Register()
-	api.Gin.Run(strings.Join([]string{api.Host, api.Port}, ":"))
+	api.Gin.Run(strings.Join([]string{api.conf.Host, api.conf.Port}, ":"))
 }
 
 // Register creates all api endpoints in given instance of gin
@@ -78,7 +76,7 @@ func (api *API) Register() {
 		})
 
 		v1.POST("/send/whatsapp", api.withAuth(), api.handleWhatsApp)
-		v1.POST("/incoming", gin.BasicAuth(api.WebHookAccount), api.handleIncoming)
+		v1.POST("/incoming", gin.BasicAuth(api.conf.WebHookAccount), api.handleIncoming)
 	}
 }
 
@@ -87,7 +85,7 @@ func (api *API) withAuth() gin.HandlerFunc {
 		tokenStr := c.GetHeader("authorization")
 		tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			return api.JWTSecret, nil
+			return api.conf.JWTSecret, nil
 		})
 
 		if err != nil || !token.Valid {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -86,7 +87,7 @@ func (api *API) handleLogin(c *gin.Context) {
 		"exp": time.Now().Add(time.Hour * 24 * 15).Unix(),
 	})
 
-	tokenStr, err := token.SignedString(api.JWTSecret)
+	tokenStr, err := token.SignedString(api.conf.JWTSecret)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		level.Error(logger).Log("err", err)
@@ -237,8 +238,21 @@ func (api *API) handleRegister(c *gin.Context) {
 		return
 	}
 
-	msg := fmt.Sprintf("Your GoNotify code is %s", code)
-	err = api.TwilioClient.SendWhatsApp(api.WhatsAppFrom, wappNumber, msg)
+	type TplInput struct {
+		Code string
+	}
+	ti := TplInput{Code: code}
+
+	var buf bytes.Buffer
+	err = api.conf.VerifyTmpl.Execute(&buf, ti)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+	level.Debug(logger).Log("message", buf.String())
+
+	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, wappNumber, buf.String())
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		level.Error(logger).Log("err", err)

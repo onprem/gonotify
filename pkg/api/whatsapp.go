@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -49,7 +51,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 		return
 	}
 
-	err = sendWhatsApp(api.DB, uID, groupID, json.Body, api.TwilioClient, api.WhatsAppFrom)
+	err = sendWhatsApp(api.DB, uID, groupID, json.Body, api.TwilioClient, api.conf.WhatsAppFrom, api.conf.NotifTmpl)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		level.Error(logger).Log("err", err)
@@ -61,7 +63,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 	})
 }
 
-func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twilio, from string) error {
+func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twilio, from string, tmpl *template.Template) error {
 	res, err := db.Exec(
 		`INSERT INTO notifications(userID, groupID, body, timeSt) VALUES (?, ?, ?, ?)`,
 		userID,
@@ -140,7 +142,28 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 			continue
 		}
 
-		err = tc.SendWhatsApp(from, v.phone, `Your appointment is coming up on today at notification`) // Replace with actual Template
+		type tmplData struct {
+			Total int
+		}
+		var tData tmplData
+
+		err = db.QueryRow(
+			`SELECT COUNT(id) FROM pendingMsgs WHERE numberID = ?`,
+			v.id,
+		).Scan(&tData.Total)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		var msg bytes.Buffer
+		err = tmpl.Execute(&msg, tData)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		err = tc.SendWhatsApp(from, v.phone, msg.String()) // Replace with actual Template
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -241,7 +264,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 		body = "You have no new notifications"
 	}
 
-	err = api.TwilioClient.SendWhatsApp(api.WhatsAppFrom, i.From, body)
+	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, i.From, body)
 	if err != nil {
 		level.Error(logger).Log("err", err)
 		c.Status(http.StatusInternalServerError)

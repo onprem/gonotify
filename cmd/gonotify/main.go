@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"text/template"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -29,6 +31,10 @@ type config struct {
 	Database struct {
 		Path string `yaml:"path" env:"DATABASE_PATH" env-default:"gonotify.db"`
 	} `yaml:"database"`
+	Template struct {
+		Verify       string `yaml:"verify" env:"TEMPLATE_VERIFY"`
+		Notification string `yaml:"notification" env:"TEMPLATE_NOTIFICATION"`
+	} `yaml:"templates"`
 }
 
 func main() {
@@ -52,15 +58,23 @@ func main() {
 	logger = level.NewFilter(logger, level.AllowAll())
 	logger = log.With(logger, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
 
+	verifyTmpl := template.Must(template.New("verify").Parse(cfg.Template.Verify))
+	notifTmpl := template.Must(template.New("notif").Parse(cfg.Template.Notification))
+
+	conf := api.Config{
+		TwilioSID:      cfg.Twilio.SID,
+		TwilioToken:    cfg.Twilio.Token,
+		Host:           cfg.Server.Host,
+		Port:           cfg.Server.Port,
+		JWTSecret:      []byte(cfg.Server.JWTSecret),
+		WhatsAppFrom:   cfg.Twilio.WhatsAppFrom,
+		WebHookAccount: gin.Accounts{cfg.Twilio.WebhookUser: cfg.Twilio.WebhookPass},
+		VerifyTmpl:     verifyTmpl,
+		NotifTmpl:      notifTmpl,
+	}
+
 	gnAPI, err := api.NewAPI(
-		cfg.Server.Host,
-		cfg.Server.Port,
-		cfg.Server.JWTSecret,
-		cfg.Twilio.SID,
-		cfg.Twilio.Token,
-		cfg.Twilio.WebhookUser,
-		cfg.Twilio.WebhookPass,
-		cfg.Twilio.WhatsAppFrom,
+		conf,
 		db,
 		&logger,
 	)

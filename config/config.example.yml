@@ -13,3 +13,14 @@ twilio:
   webhook_password: whookpass
 database:
   path: gonotify.db # path for sqlite3 database
+
+# Your Twilio whatsapp number must have templates aligning with below values
+templates:
+  # available variables:
+  # Code - verification code
+  verify: "Your GoNotify code is {{.Code}}"
+  # I know this doesn't make sense, but this aligns with one of the template
+  # provided by Twilio whatsapp sandbox
+  # available variables:
+  # Total - number of notifications pending
+  notification: "Your appointment is coming up on today at notification"
