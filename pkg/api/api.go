@@ -80,6 +80,7 @@ func (api *API) Register() {
 		v1.POST("/send/whatsapp", api.withAuth(), api.handleWhatsApp)
 
 		v1.POST("/add/number", api.withAuth(), api.handleAddNumber)
+		v1.POST("/add/group", api.withAuth(), api.handleAddGroup)
 
 		v1.POST("/incoming", gin.BasicAuth(api.conf.WebHookAccount), api.handleIncoming)
 	}
