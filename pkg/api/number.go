@@ -142,7 +142,6 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 	uID := int(c.MustGet("id").(float64))
 
 	if err := c.ShouldBind(&i); err != nil {
-		level.Error(logger).Log("err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "all fields are required",
 		})

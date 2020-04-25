@@ -302,3 +302,93 @@ func (api *API) handleIncoming(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "addWhatsAppToGroup")
+
+	type input struct {
+		GroupID  int `json:"groupID" binding:"required"`
+		NumberID int `json:"numberID" binding:"required"`
+	}
+
+	var i input
+	uID := int(c.MustGet("id").(float64))
+
+	if err := c.ShouldBind(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "all fields are required",
+		})
+		level.Debug(logger).Log("err", err)
+		return
+	}
+
+	var tmpID int
+	err := api.DB.QueryRow(
+		`SELECT id FROM groups WHERE id = ? AND userID = ?`,
+		i.GroupID,
+		uID,
+	).Scan(&tmpID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "group not found",
+			})
+			return
+		}
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	err = api.DB.QueryRow(
+		`SELECT id FROM numbers WHERE id = ? AND userID = ?`,
+		i.NumberID,
+		uID,
+	).Scan(&tmpID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "phone number not found",
+			})
+			return
+		}
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	err = api.DB.QueryRow(
+		`SELECT id FROM whatsappNodes WHERE numberID = ? AND groupID = ?`,
+		i.NumberID,
+		i.GroupID,
+	).Scan(&tmpID)
+	if err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "phone number is already in group",
+		})
+		return
+	}
+	if err != sql.ErrNoRows {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	oldTime := time.Date(1950, time.January, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339)
+
+	_, err = api.DB.Exec(
+		`INSERT INTO whatsappNodes(groupID, numberID, lastMsgReceived) VALUES(?, ?, ?)`,
+		i.GroupID,
+		i.NumberID,
+		oldTime,
+	)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "number added to group successfully",
+	})
+}
