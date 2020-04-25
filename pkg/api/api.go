@@ -68,7 +68,9 @@ func (api *API) Register() {
 
 		v1.POST("/login", api.handleLogin)
 		v1.POST("/register", api.handleRegister)
+
 		v1.POST("/verify", api.handleUserVerify)
+		v1.POST("/verify/number", api.withAuth(), api.handleVerifyNumber)
 
 		v1.POST("/send", api.withAuth(), func(c *gin.Context) {
 			c.Request.URL.Path = c.Request.URL.Path + "/whatsapp"
@@ -76,6 +78,9 @@ func (api *API) Register() {
 		})
 
 		v1.POST("/send/whatsapp", api.withAuth(), api.handleWhatsApp)
+
+		v1.POST("/add/number", api.withAuth(), api.handleAddNumber)
+
 		v1.POST("/incoming", gin.BasicAuth(api.conf.WebHookAccount), api.handleIncoming)
 	}
 }

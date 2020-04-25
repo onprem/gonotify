@@ -240,8 +240,6 @@ func (api *API) handleRegister(c *gin.Context) {
 		return
 	}
 
-	tx.Commit()
-
 	type TplInput struct {
 		Code string
 	}
@@ -262,6 +260,8 @@ func (api *API) handleRegister(c *gin.Context) {
 		level.Error(logger).Log("err", err)
 		return
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "successfully registered",
