@@ -73,6 +73,7 @@ func (api *API) Register() {
 
 		v1.POST("/verify", api.handleUserVerify)
 
+		v1.GET("/notifications", api.withAuth(), api.queryNotifications)
 		v1.POST("/send", api.withAuth(), func(c *gin.Context) {
 			c.Request.URL.Path = c.Request.URL.Path + "/whatsapp"
 			api.Gin.HandleContext(c)

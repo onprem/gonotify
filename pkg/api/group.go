@@ -58,7 +58,7 @@ func (api *API) queryGroups(c *gin.Context) {
 		wNodes[n.GroupID] = append(wNodes[n.GroupID], n)
 	}
 
-	var groups []Group
+	groups := []Group{}
 
 	rows, err := api.DB.Query(
 		`SELECT id, userID, name FROM groups WHERE userID = ?`,
