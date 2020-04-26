@@ -20,7 +20,7 @@ type User struct {
 	Name     string
 	Phone    string
 	Hash     string
-	Verified int
+	Verified bool
 }
 
 // VerifyUser Models the verifyUser table
@@ -29,6 +29,37 @@ type VerifyUser struct {
 	UserID   int
 	NumberID int
 	Code     string
+}
+
+func (api *API) queryUser(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "user")
+
+	var u User
+	uID := int(c.MustGet("id").(float64))
+
+	err := api.DB.QueryRow(
+		`SELECT id, name, phone, verified FROM users WHERE id = ?`,
+		uID,
+	).Scan(&u.ID, &u.Name, &u.Phone, &u.Verified)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "invalid userID",
+			})
+			return
+		}
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":       u.ID,
+		"name":     u.Name,
+		"phone":    u.Phone,
+		"verified": u.Verified,
+	})
 }
 
 func (api *API) handleLogin(c *gin.Context) {

@@ -12,10 +12,47 @@ import (
 
 // Number models the numbers table in database
 type Number struct {
-	ID       int
-	userID   int
-	Phone    string
-	Verified bool
+	ID       int    `json:"id"`
+	UserID   int    `json:"userID"`
+	Phone    string `json:"phone"`
+	Verified bool   `json:"verified"`
+}
+
+func (api *API) queryNumbers(c *gin.Context) {
+	logger := log.With(*api.logger, "route", "numbers")
+
+	uID := int(c.MustGet("id").(float64))
+
+	var numbers []Number
+
+	rows, err := api.DB.Query(
+		`SELECT id, userID, phone, verified FROM numbers WHERE userID = ?`,
+		uID,
+	)
+
+	if err != nil && err != sql.ErrNoRows {
+		c.Status(http.StatusInternalServerError)
+		level.Error(logger).Log("err", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var n Number
+		err = rows.Scan(&n.ID, &n.UserID, &n.Phone, &n.Verified)
+
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			level.Error(logger).Log("err", err)
+			return
+		}
+
+		numbers = append(numbers, n)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"numbers": numbers,
+	})
 }
 
 func (api *API) handleAddNumber(c *gin.Context) {

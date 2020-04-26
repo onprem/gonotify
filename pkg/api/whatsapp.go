@@ -16,6 +16,15 @@ import (
 	"github.com/prmsrswt/gonotify/pkg/twilio"
 )
 
+// WhatsAppNode represents table whatsappNodes' schema
+type WhatsAppNode struct {
+	ID              int    `json:"id"`
+	GroupID         int    `json:"groupID"`
+	NumberID        int    `json:"numberID"`
+	Phone           string `json:"phone"`
+	LastMsgReceived string `json:"lastMsgReceived"`
+}
+
 func (api *API) handleWhatsApp(c *gin.Context) {
 	logger := log.With(*api.logger, "route", "whatsapp")
 
@@ -203,22 +212,6 @@ func (api *API) handleIncoming(c *gin.Context) {
 	number := strings.TrimPrefix(i.From, "whatsapp:")
 
 	level.Debug(logger).Log("from", i.From, "body", i.Body)
-
-	// var numID int
-	// err = api.DB.QueryRow(
-	// 	`SELECT id FROM numbers WHERE phone = ?`,
-	// 	number,
-	// ).Scan(&numID)
-	// if err != nil {
-	// 	if err == sql.ErrNoRows {
-	// 		level.Info(logger).Log("from", i.From, "msg", "messagse received from unknown number")
-	// 		c.Status(http.StatusNoContent)
-	// 		return
-	// 	}
-	// 	level.Error(logger).Log("err", err)
-	// 	c.Status(http.StatusInternalServerError)
-	// 	return
-	// }
 
 	rows, err := api.DB.Query(
 		`SELECT id FROM numbers WHERE phone = ?`,
