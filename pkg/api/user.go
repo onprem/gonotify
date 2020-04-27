@@ -32,7 +32,7 @@ type VerifyUser struct {
 }
 
 func (api *API) queryUser(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "user")
+	logger := log.With(api.logger, "route", "user")
 
 	var u User
 	uID := int(c.MustGet("id").(float64))
@@ -63,7 +63,7 @@ func (api *API) queryUser(c *gin.Context) {
 }
 
 func (api *API) handleLogin(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "login")
+	logger := log.With(api.logger, "route", "login")
 	var user User
 
 	type input struct {
@@ -132,7 +132,7 @@ func (api *API) handleLogin(c *gin.Context) {
 }
 
 func (api *API) handleRegister(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "register")
+	logger := log.With(api.logger, "route", "register")
 	type input struct {
 		Name     string `json:"name" binding:"required"`
 		Phone    string `json:"phone" binding:"required"`
@@ -303,7 +303,7 @@ func (api *API) handleRegister(c *gin.Context) {
 }
 
 func (api *API) handleUserVerify(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "userVerify")
+	logger := log.With(api.logger, "route", "userVerify")
 
 	type input struct {
 		Phone string `json:"phone" binding:"required"`

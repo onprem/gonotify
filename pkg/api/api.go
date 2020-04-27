@@ -18,15 +18,13 @@ type API struct {
 	Gin          *gin.Engine
 	TwilioClient *twilio.Twilio
 	DB           *sql.DB
-	logger       *log.Logger
+	logger       log.Logger
 }
 
 // Config represents a configuration object for this API
 type Config struct {
 	TwilioSID             string
 	TwilioToken           string
-	Host                  string
-	Port                  string
 	JWTSecret             []byte
 	WhatsAppFrom          string
 	WebHookAccount        gin.Accounts
@@ -34,12 +32,7 @@ type Config struct {
 }
 
 // NewAPI creates a new API instance
-func NewAPI(
-	conf Config,
-	db *sql.DB,
-	logger *log.Logger,
-) (*API, error) {
-
+func NewAPI(conf Config, router *gin.Engine, db *sql.DB, logger log.Logger) (*API, error) {
 	err := bootstrapDB(db)
 	if err != nil {
 		return nil, err
@@ -47,17 +40,11 @@ func NewAPI(
 
 	return &API{
 		conf:         conf,
-		Gin:          gin.Default(),
+		Gin:          router,
 		TwilioClient: twilio.NewClient(conf.TwilioSID, conf.TwilioToken),
 		DB:           db,
-		logger:       logger,
+		logger:       log.With(logger, "component", "api"),
 	}, nil
-}
-
-// Run is a wrapper around Register and Gin.Run()
-func (api *API) Run() {
-	api.Register()
-	api.Gin.Run(strings.Join([]string{api.conf.Host, api.conf.Port}, ":"))
 }
 
 // Register creates all api endpoints in given instance of gin

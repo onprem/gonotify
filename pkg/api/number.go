@@ -19,7 +19,7 @@ type Number struct {
 }
 
 func (api *API) queryNumbers(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "numbers")
+	logger := log.With(api.logger, "route", "numbers")
 
 	uID := int(c.MustGet("id").(float64))
 
@@ -56,7 +56,7 @@ func (api *API) queryNumbers(c *gin.Context) {
 }
 
 func (api *API) handleAddNumber(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "addNumber")
+	logger := log.With(api.logger, "route", "addNumber")
 
 	type input struct {
 		Phone string `json:"phone" binding:"required"`
@@ -168,7 +168,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 }
 
 func (api *API) handleVerifyNumber(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "verifyNumber")
+	logger := log.With(api.logger, "route", "verifyNumber")
 
 	type input struct {
 		Phone string `json:"phone" binding:"required"`

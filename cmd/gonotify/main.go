@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/prmsrswt/gonotify/pkg/api"
+	"github.com/prmsrswt/gonotify/pkg/ui"
 )
 
 type config struct {
@@ -54,6 +56,8 @@ func main() {
 		handleError(err)
 	}
 
+	router := gin.Default()
+
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, level.AllowAll())
 	logger = log.With(logger, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
@@ -64,8 +68,6 @@ func main() {
 	conf := api.Config{
 		TwilioSID:      cfg.Twilio.SID,
 		TwilioToken:    cfg.Twilio.Token,
-		Host:           cfg.Server.Host,
-		Port:           cfg.Server.Port,
 		JWTSecret:      []byte(cfg.Server.JWTSecret),
 		WhatsAppFrom:   cfg.Twilio.WhatsAppFrom,
 		WebHookAccount: gin.Accounts{cfg.Twilio.WebhookUser: cfg.Twilio.WebhookPass},
@@ -73,15 +75,20 @@ func main() {
 		NotifTmpl:      notifTmpl,
 	}
 
-	gnAPI, err := api.NewAPI(
-		conf,
-		db,
-		&logger,
-	)
+	gnAPI, err := api.NewAPI(conf, router, db, logger)
 	if err != nil {
 		handleError(err)
 	}
-	gnAPI.Run()
+	gnAPI.Register()
+
+	baseUI, err := ui.NewBaseUI(router, logger)
+	if err != nil {
+		handleError(err)
+	}
+	baseUI.Register()
+
+	addr := strings.Join([]string{cfg.Server.Host, cfg.Server.Port}, ":")
+	router.Run(addr)
 }
 
 func handleError(err error) {

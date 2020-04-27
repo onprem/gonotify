@@ -1,4 +1,4 @@
-PROJECTNA   ?= $(shell basename "$(PWD)")
+PROJECTNAME   ?= $(shell basename "$(PWD)")
 BASE         = $(shell pwd)
 BUILD_DIR   ?= $(BASE)/build
 VETARGS     ?= -all
@@ -17,6 +17,12 @@ export GOPROXY
 # Tools
 GOBINDATA         ?= $(GOBIN)/go-bindata
 
+# React
+REACT_APP_PATH = pkg/ui/react-app
+REACT_APP_SOURCE_FILES = $(wildcard $(REACT_APP_PATH)/public/* $(REACT_APP_PATH)/src/* $(REACT_APP_PATH)/package.json)
+REACT_APP_OUTPUT_DIR = $(REACT_APP_PATH)/build
+REACT_APP_NODE_MODULES_PATH = $(REACT_APP_PATH)/node_modules
+
 
 .PHONY: help
 help: ## Display usage and help message.
@@ -27,6 +33,15 @@ help:
 $(GOBINDATA):
 	@echo ">> installing go-bindata"
 	@GO111MODULE='off' go get -u github.com/go-bindata/go-bindata/...
+
+
+$(REACT_APP_NODE_MODULES_PATH): $(REACT_APP_PATH)/package.json $(REACT_APP_PATH)/yarn.lock
+	@echo ">> installing npm dependencies for React UI"
+	@cd $(REACT_APP_PATH) && yarn --frozen-lockfile
+
+$(REACT_APP_OUTPUT_DIR): $(REACT_APP_NODE_MODULES_PATH) $(REACT_APP_SOURCE_FILES)
+	@echo ">> building React app"
+	@cd $(REACT_APP_PATH) && yarn build
 
 
 .PHONY: run
@@ -45,18 +60,18 @@ run-prod:
 
 .PHONY: build
 build: ## Builds the GoNotify binary.
-build:
+build: assets
 	@echo ">> building $(PROJECTNAME) binary"
 	@go build -o $(BUILD_DIR)/gonotify ./cmd/gonotify
 
 
 .PHONY: assets
 assets: ## Repacks all static assets into go file for easier deploy.
-assets: $(GOBINDATA)
+assets: $(GOBINDATA) $(REACT_APP_OUTPUT_DIR)
 	@echo ">> deleting asset file"
 	@rm pkg/ui/bindata.go || true
 	@echo ">> writing assets"
-	@go-bindata -pkg ui -o pkg/ui/bindata.go -prefix "/pkg/ui/react-app/build" pkg/ui/react-app/build/...
+	@go-bindata -pkg ui -o pkg/ui/bindata.go -prefix "pkg/ui/react-app/build" pkg/ui/react-app/build/...
 	@go fmt ./pkg/ui
 
 
@@ -77,3 +92,25 @@ fmt: ## Format all go files using go fmt.
 fmt:
 	@echo ">> running go fmt on all go files"
 	@gofmt -w $(GOFMT_FILES)
+
+
+.PHONY: react-app-start
+react-app-start: ## Start React app for local development
+react-app-start: $(REACT_APP_NODE_MODULES_PATH)
+	@echo ">> running React app"
+	@cd $(REACT_APP_PATH) && yarn start
+
+.PHONY: react-app-lint
+react-app-lint: $(REACT_APP_NODE_MODULES_PATH)
+	   @echo ">> running React app linting"
+	   cd $(REACT_APP_PATH) && yarn lint:ci
+
+.PHONY: react-app-lint-fix
+react-app-lint-fix:
+	@echo ">> running React app linting and fixing errors where possible"
+	cd $(REACT_APP_PATH) && yarn lint
+
+.PHONY: react-app-test
+react-app-test: | $(REACT_APP_NODE_MODULES_PATH) react-app-lint
+	@echo ">> running React app tests"
+	cd $(REACT_APP_PATH) && export CI=true && yarn test --no-watch --coverage

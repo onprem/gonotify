@@ -26,7 +26,7 @@ type WhatsAppNode struct {
 }
 
 func (api *API) handleWhatsApp(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "whatsapp")
+	logger := log.With(api.logger, "route", "whatsapp")
 
 	type message struct {
 		Group string `json:"group" binding:"-"`
@@ -195,7 +195,7 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 }
 
 func (api *API) handleIncoming(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "incoming")
+	logger := log.With(api.logger, "route", "incoming")
 
 	type input struct {
 		From string `form:"From"`
@@ -297,7 +297,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 }
 
 func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "addWhatsAppToGroup")
+	logger := log.With(api.logger, "route", "addWhatsAppToGroup")
 
 	type input struct {
 		GroupID  int `json:"groupID" binding:"required"`

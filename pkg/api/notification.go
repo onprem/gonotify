@@ -19,7 +19,7 @@ type Notification struct {
 }
 
 func (api *API) queryNotifications(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "notifications")
+	logger := log.With(api.logger, "route", "notifications")
 
 	uID := int(c.MustGet("id").(float64))
 

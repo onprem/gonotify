@@ -19,7 +19,7 @@ type Group struct {
 }
 
 func (api *API) queryGroups(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "groups")
+	logger := log.With(api.logger, "route", "groups")
 
 	uID := int(c.MustGet("id").(float64))
 
@@ -93,7 +93,7 @@ func (api *API) queryGroups(c *gin.Context) {
 }
 
 func (api *API) handleAddGroup(c *gin.Context) {
-	logger := log.With(*api.logger, "route", "addGroup")
+	logger := log.With(api.logger, "route", "addGroup")
 
 	type input struct {
 		Name string `json:"name" binding:"required,alpha"`
