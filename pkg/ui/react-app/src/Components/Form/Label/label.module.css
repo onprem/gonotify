@@ -1,0 +1,10 @@
+.label {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.text {
+  margin-bottom: 10px;
+}
