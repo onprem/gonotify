@@ -2,7 +2,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -14,8 +14,18 @@ code {
     monospace;
 }
 
+input, textarea, button {
+  font-family: inherit;
+}
+
+a {
+  text-decoration: none;
+}
+
 :root {
   --colorBrand: #2d32a2;
   --colorAccent: #e83f62;
   --colorBrand-light: #6969f9;
+  --colorFG: #000000;
+  --colorBG: #ffffff;
 }

@@ -1,0 +1,59 @@
+.home {
+  width: 84%;
+  height: 100vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  width: 40%;
+  margin-left: 5%;
+}
+
+.heading {
+  color: var(--colorBrand);
+  font-size: 3.8em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.accent {
+  color: var(--colorAccent);
+  position: relative;
+}
+
+.accent::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  bottom: 10px;
+  left: 0;
+  border-bottom: solid 2px var(--colorAccent);
+}
+
+.para {
+  color: var(--colorAccent);
+  margin: 4em 0;
+  line-height: 2em;
+  /* width: 90%; */
+  font-size: 1.2em;
+}
+
+.btn {
+  font-weight: 600;
+}
+
+.arrow {
+  margin-left: 1.5em;
+}
+
+.hero {
+  height: 90%;
+  box-sizing: border-box;
+  padding-top: 8em;
+}
+

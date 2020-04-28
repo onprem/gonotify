@@ -1,0 +1,20 @@
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+  top: 3em;
+  width: 80%;
+}
+
+.logo {
+  height: 6em;
+}
+
+.link {
+  color: var(--colorBrand);
+  font-size: 1.2em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  margin: 0 1.5em;
+}
