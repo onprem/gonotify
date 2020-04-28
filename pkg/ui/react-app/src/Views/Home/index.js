@@ -1,8 +1,9 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Button from 'Components/Button';
 
-import {ReactComponent as HeroImg} from 'Assets/images/hero.svg';
-import {ReactComponent as ArrowIcon} from 'Assets/icons/arrow.svg';
+import { ReactComponent as HeroImg } from 'Assets/images/hero.svg';
+import { ReactComponent as ArrowIcon } from 'Assets/icons/arrow.svg';
 import styles from './home.module.css';
 
 const Home = () => {
@@ -16,7 +17,11 @@ const Home = () => {
           Stay in control of all your products with seamless notifications on your favourite social
           platform.
         </p>
-        <Button size="large" className={styles.btn}>JOIN NOW <ArrowIcon className={styles.arrow} /></Button>
+        <Link to="/register">
+          <Button size="large" className={styles.btn}>
+            JOIN NOW <ArrowIcon className={styles.arrow} />
+          </Button>
+        </Link>
       </div>
       <HeroImg className={styles.hero} />
     </div>

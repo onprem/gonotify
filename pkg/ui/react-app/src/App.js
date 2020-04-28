@@ -1,4 +1,5 @@
 import React from 'react';
+import { Switch, Route } from 'react-router-dom';
 
 import Nav from 'Views/Nav';
 import Home from 'Views/Home';
@@ -9,7 +10,11 @@ function App() {
   return (
     <div className={styles.App}>
       <Nav />
-      <Home />
+      <Switch>
+        <Route exact path="/">
+          <Home />
+        </Route>
+      </Switch>
     </div>
   );
 }
