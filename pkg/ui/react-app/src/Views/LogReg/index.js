@@ -4,6 +4,7 @@ import { useAuth } from 'Context/auth';
 
 import Login from './Login';
 import Register from './Register';
+import Verify from './Verify';
 
 import { ReactComponent as BellIcon } from 'Assets/icons/notif.svg';
 
@@ -25,6 +26,9 @@ const LogReg = () => {
           </Route>
           <Route exact path="/register">
             <Register />
+          </Route>
+          <Route exact path="/verify/:phone">
+            <Verify />
           </Route>
         </Switch>
       </div>

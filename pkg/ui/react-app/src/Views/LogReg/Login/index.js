@@ -14,13 +14,13 @@ import styles from './login.module.css';
 const Login = () => {
   const [values, setValues] = useState();
   const { handleSubmit, register, errors } = useForm();
-  const { setToken } = useAuth();
+  const { logMeIn } = useAuth();
 
   const { isValidating } = useSWR(values ? ['/api/v1/login', 'POST', values] : null, {
     onSuccess: (data) => {
       if (data.error) toast.error(data.error);
       else {
-        setToken(data.token);
+        logMeIn(data.token);
         toast.success(data.message);
       }
     },
