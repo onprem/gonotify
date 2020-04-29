@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 
 import Button from 'Components/Button';
@@ -78,17 +77,12 @@ const Card = ({ name, id, groups }) => {
   );
 };
 
-const Groups = () => {
-  const { data, error } = useSWR('/api/v1/groups');
-
-  if (error) return <h1>Some error occured.</h1>;
-  if (!data) return <h1>Loading...</h1>;
-
+const Groups = ({ groups }) => {
   return (
     <div className={styles.groups}>
       <h2 className={styles.heading}>All Groups</h2>
       <div className={styles.cards}>
-        {data.groups.map((g) => (
+        {groups.map((g) => (
           <Card key={g.id} name={g.name} id={g.id} groups={g.whatsappNodes.length} />
         ))}
       </div>

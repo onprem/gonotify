@@ -1,0 +1,7 @@
+.input {
+  composes: input from '../Text/text.module.css';
+}
+
+.error {
+  composes: error from '../Text/text.module.css';
+}

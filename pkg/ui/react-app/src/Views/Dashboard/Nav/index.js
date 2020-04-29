@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from 'Context/auth';
 
-import user from 'Assets/icons/acc.svg';
 import { ReactComponent as SettingIcon } from 'Assets/icons/settings.svg';
 
 import styles from './nav.module.css';
@@ -16,7 +15,7 @@ const Nav = () => {
         <SettingIcon className={styles.ico} />
       </Link>
       <div className={styles.accDiv}>
-        <img src={user} alt="avatar" className={styles.avatar} />
+        <img src={`https://api.adorable.io/avatars/60/Prem.png`} alt="avatar" className={styles.avatar} />
         <div className={styles.menu}>
           <a className={styles.link} href="#logout" onClick={logMeOut}>
             LogOut

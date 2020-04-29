@@ -27,10 +27,10 @@ func (api *API) queryNumbers(c *gin.Context) {
 	var numbers []Number
 
 	rows, err := api.DB.Query(
-		`SELECT numbers.id, numbers.userID, numbers.phone, numbers.verified, COUNT(whatsappNodes.id) as groups
+		`SELECT numbers.id, numbers.userID, numbers.phone, numbers.verified, COUNT(whatsappNodes.groupID) as groups
 		FROM numbers
-		LEFT JOIN whatsappNode ON numbers.id = whatsappNodes.numberID
-		WHERE numbers.userID = ?`,
+		LEFT JOIN whatsappNodes ON numbers.id = whatsappNodes.numberID
+		WHERE numbers.userID = ? GROUP BY numbers.id`,
 		uID,
 	)
 

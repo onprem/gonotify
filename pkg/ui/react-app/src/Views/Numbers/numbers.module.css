@@ -1,0 +1,42 @@
+.numbers {
+  composes: groups from '../Groups/groups.module.css';
+}
+
+.heading {
+  composes: heading from '../Groups/groups.module.css';
+}
+
+.cards {
+  composes: cards from '../Groups/groups.module.css';
+}
+
+.card {
+  composes: card from '../Groups/groups.module.css';
+  width: 280px;
+  height: 280px;
+}
+
+.content {
+  composes: up from '../Groups/groups.module.css';
+}
+
+.cardName {
+  composes: cardName from '../Groups/groups.module.css';
+}
+
+.cardDetail {
+  composes: cardDetail from '../Groups/groups.module.css';
+}
+
+.btn {
+  composes: btn from '../Groups/groups.module.css';
+  background: var(--colorBrand-light)
+}
+
+.form {
+  composes: form from '../Groups/groups.module.css';
+}
+
+.formBtn {
+  composes: formBtn from '../Groups/groups.module.css';
+}

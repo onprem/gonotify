@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children, ...rest }) => {
       {token ? (
         children
       ) : (
-        <Redirect to={{ pathname: '/login', state: { referer: location.pathname } }} />
+        <Redirect to={{ pathname: '/login', state: { referrer: location.pathname } }} />
       )}
     </Route>
   );
