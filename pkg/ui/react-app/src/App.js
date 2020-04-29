@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Switch, Route } from 'react-router-dom';
+import { Switch, Route, Redirect } from 'react-router-dom';
 import { SWRConfig } from 'swr';
 
 import fetcher from 'Utils/fetcher';
 import { AuthProvider } from 'Context/auth';
+import ProtectedRoute from 'Components/ProtectedRoute';
 
 import Nav from 'Views/Nav';
 import Home from 'Views/Home';
 import LogReg from 'Views/LogReg';
+import Dashboard from 'Views/Dashboard';
 
 import styles from './App.module.css';
 
@@ -40,7 +42,9 @@ function App() {
         }}
       >
         <div className={styles.App}>
-          <Nav />
+          <Route exact path={['/', '/login', '/register', '/verify/:phone']}>
+            <Nav />
+          </Route>
           <Switch>
             <Route exact path="/">
               <Home />
@@ -48,6 +52,12 @@ function App() {
             <Route exact path={['/login', '/register', '/verify/:phone']}>
               <LogReg />
             </Route>
+            <ProtectedRoute exact path="/dashboard">
+              <Redirect to="/dashboard/groups" />
+            </ProtectedRoute>
+            <ProtectedRoute path="/dashboard">
+              <Dashboard />
+            </ProtectedRoute>
           </Switch>
         </div>
       </SWRConfig>

@@ -1,0 +1,17 @@
+.dash {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  --sidebar: 15%;
+}
+
+.main {
+  width: calc(100% - var(--sidebar));
+  background: var(--colorLight);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 2em 4em;
+  height: 100vh;
+}

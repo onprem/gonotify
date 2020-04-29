@@ -1,0 +1,80 @@
+.sidebar {
+  width: var(--sidebar);
+  background: var(--colorDark);
+  color: var(--colorBG);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 3em 2em;
+}
+
+.top {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  height: 6em;
+  margin: 1em;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 2em;
+}
+
+.link {
+  font-size: 1.2em;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  color: var(--colorGray);
+  padding: 1.8em 0;
+  position: relative;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-bottom: solid 1px var(--colorShadow);
+}
+
+.link:last-child::after {
+  display: none;
+}
+
+.link:focus {
+  outline: none;
+}
+
+.active {
+  color: var(--colorBG);
+}
+
+.icon {
+  margin-right: 1em;
+  width: 1.6em;
+}
+
+.help {
+  background: var(--colorBG);
+  color: var(--colorDark);
+  width: 90%;
+  font-size: 1.2em;
+  padding: 0.5em 2em;
+}
+
+.helpicon {
+  margin-right: 1em;
+  width: 1.2em;
+}

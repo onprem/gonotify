@@ -15,6 +15,7 @@ type Number struct {
 	ID       int    `json:"id"`
 	UserID   int    `json:"userID"`
 	Phone    string `json:"phone"`
+	Groups   int    `json:"groups"`
 	Verified bool   `json:"verified"`
 }
 
@@ -26,7 +27,10 @@ func (api *API) queryNumbers(c *gin.Context) {
 	var numbers []Number
 
 	rows, err := api.DB.Query(
-		`SELECT id, userID, phone, verified FROM numbers WHERE userID = ?`,
+		`SELECT numbers.id, numbers.userID, numbers.phone, numbers.verified, COUNT(whatsappNodes.id) as groups
+		FROM numbers
+		LEFT JOIN whatsappNode ON numbers.id = whatsappNodes.numberID
+		WHERE numbers.userID = ?`,
 		uID,
 	)
 
@@ -39,7 +43,7 @@ func (api *API) queryNumbers(c *gin.Context) {
 
 	for rows.Next() {
 		var n Number
-		err = rows.Scan(&n.ID, &n.UserID, &n.Phone, &n.Verified)
+		err = rows.Scan(&n.ID, &n.UserID, &n.Phone, &n.Verified, &n.Groups)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})

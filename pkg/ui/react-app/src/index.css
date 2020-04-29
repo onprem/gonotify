@@ -29,5 +29,9 @@ a {
   --colorFG: #000000;
   --colorBG: #ffffff;
   --colorShadow: #72778f;
+  --colorDark: #242e42;
+  --colorLight: #f9fafc;
+  --colorGray: #9e9e9e;
+  --colorSuccess: #03de73;
   --colorDanger: #dc3545;
 }
