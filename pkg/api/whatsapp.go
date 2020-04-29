@@ -206,7 +206,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 	err := c.ShouldBind(&i)
 	if err != nil {
 		level.Error(logger).Log("err", err)
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		return
 	}
 	number := strings.TrimPrefix(i.From, "whatsapp:")
@@ -231,7 +231,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 	)
 	if err != nil {
 		level.Error(logger).Log("err", err)
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		return
 	}
 
@@ -248,7 +248,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 	)
 	if err != nil {
 		level.Error(logger).Log("err", err)
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		return
 	}
 	defer rows.Close()
@@ -262,7 +262,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 		err = rows.Scan(&p.id, &p.body, &p.timeSt)
 		if err != nil {
 			level.Error(logger).Log("err", err)
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			return
 		}
 
@@ -278,7 +278,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, i.From, body)
 	if err != nil {
 		level.Error(logger).Log("err", err)
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		return
 	}
 
@@ -288,7 +288,7 @@ func (api *API) handleIncoming(c *gin.Context) {
 		)
 		if err != nil {
 			level.Error(logger).Log("err", err)
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			return
 		}
 	}
@@ -328,7 +328,7 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 			})
 			return
 		}
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -345,7 +345,7 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 			})
 			return
 		}
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -362,7 +362,7 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -376,7 +376,7 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 		oldTime,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}

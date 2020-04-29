@@ -49,7 +49,7 @@ func (api *API) queryUser(c *gin.Context) {
 			})
 			return
 		}
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -98,7 +98,7 @@ func (api *API) handleLogin(c *gin.Context) {
 				"error": "invalid phone number or password",
 			})
 		} else {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			level.Error(logger).Log("err", err)
 		}
 		return
@@ -120,7 +120,7 @@ func (api *API) handleLogin(c *gin.Context) {
 
 	tokenStr, err := token.SignedString(api.conf.JWTSecret)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -168,7 +168,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -178,7 +178,7 @@ func (api *API) handleRegister(c *gin.Context) {
 
 	hashByte, err := bcrypt.GenerateFromPassword([]byte(i.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -188,7 +188,7 @@ func (api *API) handleRegister(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -202,28 +202,28 @@ func (api *API) handleRegister(c *gin.Context) {
 		0,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
 
 	uID, err := res.LastInsertId()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
 
 	groupRes, err := tx.Exec("INSERT INTO groups(userID, name) VALUES(?, ?)", uID, "default")
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
 
 	gID, err := groupRes.LastInsertId()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -235,14 +235,14 @@ func (api *API) handleRegister(c *gin.Context) {
 		0,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
 
 	nID, err := numRes.LastInsertId()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -254,7 +254,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		oldTime,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -266,7 +266,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		code,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -279,7 +279,7 @@ func (api *API) handleRegister(c *gin.Context) {
 	var buf bytes.Buffer
 	err = api.conf.VerifyTmpl.Execute(&buf, ti)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -287,7 +287,7 @@ func (api *API) handleRegister(c *gin.Context) {
 
 	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, wappNumber, buf.String())
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -341,7 +341,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 			return
 		}
 		level.Error(logger).Log("err", err)
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		return
 	}
 
@@ -358,7 +358,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 		tmpID,
 	).Scan(&verify.ID, &verify.UserID, &verify.NumberID, &verify.Code)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -372,7 +372,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -384,7 +384,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 		tmpID,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -395,7 +395,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 		verify.NumberID,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -405,7 +405,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 		tmpID,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}

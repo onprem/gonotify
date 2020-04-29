@@ -31,7 +31,7 @@ func (api *API) queryNumbers(c *gin.Context) {
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -42,7 +42,7 @@ func (api *API) queryNumbers(c *gin.Context) {
 		err = rows.Scan(&n.ID, &n.UserID, &n.Phone, &n.Verified)
 
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			level.Error(logger).Log("err", err)
 			return
 		}
@@ -93,7 +93,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -102,7 +102,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -115,14 +115,14 @@ func (api *API) handleAddNumber(c *gin.Context) {
 		0,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
 
 	numID, err := nRes.LastInsertId()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -133,7 +133,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 		code,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -147,7 +147,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 	var buf bytes.Buffer
 	err = api.conf.VerifyTmpl.Execute(&buf, ti)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -155,7 +155,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 
 	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, wappNumber, buf.String())
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -206,7 +206,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 			})
 			return
 		}
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -233,7 +233,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -245,7 +245,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		num.ID,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -255,7 +255,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		num.ID,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}

@@ -47,7 +47,7 @@ func (bu *BaseUI) serveStatic() gin.HandlerFunc {
 			path = "index.html"
 			data, err = Asset("index.html")
 			if err != nil {
-				c.Status(http.StatusInternalServerError)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 				level.Error(bu.logger).Log("err", err)
 				return
 			}

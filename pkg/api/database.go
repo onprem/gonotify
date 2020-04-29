@@ -29,7 +29,7 @@ func bootstrapDB(db *sql.DB) error {
 		numbers(
 			id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 			userID INTEGER NOT NULL,
-			phone TEXT UNIQUE,
+			phone TEXT NOT NULL,
 			verified BOOLEAN NOT NULL CHECK (verified IN (0,1))
 		)`,
 	)

@@ -31,7 +31,7 @@ func (api *API) queryNotifications(c *gin.Context) {
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -42,7 +42,7 @@ func (api *API) queryNotifications(c *gin.Context) {
 		err = rows.Scan(&n.ID, &n.UserID, &n.GroupID, &n.Body, &n.TimeSt)
 
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			level.Error(logger).Log("err", err)
 			return
 		}

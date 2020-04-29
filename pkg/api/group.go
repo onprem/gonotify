@@ -39,7 +39,7 @@ func (api *API) queryGroups(c *gin.Context) {
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -50,7 +50,7 @@ func (api *API) queryGroups(c *gin.Context) {
 
 		err = wRows.Scan(&n.ID, &n.GroupID, &n.NumberID, &n.Phone, &n.LastMsgReceived)
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			level.Error(logger).Log("err", err)
 			return
 		}
@@ -66,7 +66,7 @@ func (api *API) queryGroups(c *gin.Context) {
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -77,7 +77,7 @@ func (api *API) queryGroups(c *gin.Context) {
 		err = rows.Scan(&g.ID, &g.UserID, &g.Name)
 
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 			level.Error(logger).Log("err", err)
 			return
 		}
@@ -124,7 +124,7 @@ func (api *API) handleAddGroup(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
@@ -135,7 +135,7 @@ func (api *API) handleAddGroup(c *gin.Context) {
 		i.Name,
 	)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
 		level.Error(logger).Log("err", err)
 		return
 	}
