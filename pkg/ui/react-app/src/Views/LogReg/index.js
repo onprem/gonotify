@@ -1,5 +1,6 @@
 import React from 'react';
-import { Switch, Route } from 'react-router-dom';
+import { Switch, Route, Redirect, useLocation } from 'react-router-dom';
+import { useAuth } from 'Context/auth';
 
 import Login from './Login';
 import Register from './Register';
@@ -9,6 +10,12 @@ import { ReactComponent as BellIcon } from 'Assets/icons/notif.svg';
 import styles from './logreg.module.css';
 
 const LogReg = () => {
+  const { token } = useAuth();
+
+  const location = useLocation();
+  const referrer = location.state?.referrer || '/dashboard';
+
+  if (token) return <Redirect to={referrer} />;
   return (
     <div className={styles.logreg}>
       <div className={styles.content}>

@@ -22,3 +22,7 @@
   font-size: 1.4em;
   padding: 0.9em 2em;
 }
+
+.btn:disabled {
+  opacity: 0.6;
+}
