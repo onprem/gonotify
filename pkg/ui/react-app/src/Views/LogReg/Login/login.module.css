@@ -1,0 +1,18 @@
+.form {
+  composes: form from "../logreg.module.css";
+}
+
+.btn {
+  composes: btn from "../logreg.module.css";
+}
+
+.heading {
+  composes: heading from "../logreg.module.css";
+}
+
+.para {
+  composes: para from "../logreg.module.css";
+}
+.hr {
+  composes: hr from "../logreg.module.css";
+}
