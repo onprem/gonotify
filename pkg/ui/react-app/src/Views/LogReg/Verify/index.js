@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { Link, useParams, useHistory } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
 import useSWRPost from 'Hooks/useSWRPost';
+import { useAuth } from 'Context/auth';
 import toast from 'Utils/toast';
 
 import { Text } from 'Components/Form';
@@ -13,15 +14,15 @@ import styles from '../logreg.module.css';
 
 const Verify = () => {
   const { phone } = useParams();
-  const history = useHistory();
   const { handleSubmit, register, errors } = useForm();
+  const { logMeIn } = useAuth();
 
   const [runVerify, { isValidating }] = useSWRPost('/api/v1/verify', {
     onSuccess: (data) => {
       if (data.error) toast.error(data.error);
       else {
         toast.success(data.message);
-        history.push(`/login`);
+        logMeIn(data.token);
       }
     },
     onError: toast.error,

@@ -412,7 +412,20 @@ func (api *API) handleUserVerify(c *gin.Context) {
 
 	tx.Commit()
 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"id":  tmpID,
+		"exp": time.Now().Add(time.Hour * 24 * 15).Unix(),
+	})
+
+	tokenStr, err := token.SignedString(api.conf.JWTSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "successfully verified user",
+		"message": "successfully verified your account",
+		"token":   tokenStr,
 	})
 }
