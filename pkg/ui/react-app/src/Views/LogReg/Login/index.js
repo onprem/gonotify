@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import useSWR from 'swr';
+import useSWRPost from 'Hooks/useSWRPost';
 import toast from 'Utils/toast';
 import { useAuth } from 'Context/auth';
 
@@ -12,11 +12,10 @@ import { ReactComponent as ArrowIcon } from 'Assets/icons/arrow.svg';
 import styles from './login.module.css';
 
 const Login = () => {
-  const [values, setValues] = useState();
   const { handleSubmit, register, errors } = useForm();
   const { logMeIn } = useAuth();
 
-  const { isValidating } = useSWR(values ? ['/api/v1/login', 'POST', values] : null, {
+  const [runLogin, { isValidating }] = useSWRPost('/api/v1/login', {
     onSuccess: (data) => {
       if (data.error) toast.error(data.error);
       else {
@@ -34,13 +33,11 @@ const Login = () => {
     });
   });
 
-  const onSubmit = setValues;
-
   return (
     <>
       <h1 className={styles.heading}>Get in !!</h1>
       <p className={styles.para}>Enter your phone number and password to continue</p>
-      <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+      <form className={styles.form} onSubmit={handleSubmit(runLogin)}>
         <Text
           name="phone"
           label="Your Phone"
