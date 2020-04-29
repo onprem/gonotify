@@ -12,6 +12,17 @@
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  padding: 2em 4em;
+  padding: 2em 6em;
   height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.heading {
+  font-weight: 400;
+  font-size: 2em;
 }
