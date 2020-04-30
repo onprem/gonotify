@@ -26,6 +26,8 @@ build-go:
       - config/
   script:
     - cp $PROD_CONF config/config.yml
+    - echo $PROD_CONF
+    - cat config/config.yml
     - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/gonotify ./cmd/gonotify
 
 build:
