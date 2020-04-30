@@ -9,5 +9,6 @@ require (
 	github.com/ilyakaznacheev/cleanenv v1.2.2
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/nyaruka/phonenumbers v1.0.55
+	github.com/spf13/cobra v0.0.3
 	golang.org/x/crypto v0.0.0-20200423195118-18b771bd64f1
 )

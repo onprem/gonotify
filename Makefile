@@ -70,6 +70,12 @@ build-static: assets
 	@echo ">> building statically linked $(PROJECTNAME) binary"
 	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o $(BUILD_DIR)/gonotify ./cmd/gonotify
 
+.PHONY: build-cli
+build-cli: ## Builds gncli - the GoNotify CLI client.
+build-cli:
+	@echo ">> building gncli binary"
+	@go build -o $(BUILD_DIR)/gncli ./cmd/gncli
+
 .PHONY: assets
 assets: ## Repacks all static assets into go file for easier deploy.
 assets: $(GOBINDATA) $(REACT_APP_OUTPUT_DIR)

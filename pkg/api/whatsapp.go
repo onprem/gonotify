@@ -29,7 +29,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 	logger := log.With(api.logger, "route", "whatsapp")
 
 	type message struct {
-		Group string `json:"group" binding:"alpha"`
+		Group string `json:"group" binding:"-"`
 		Body  string `json:"body" binding:"required"`
 	}
 
