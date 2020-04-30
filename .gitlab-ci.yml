@@ -76,5 +76,4 @@ stop-stg:
 include:
   - project: 'ops/k8s'
     file: 'Build.template.yml'
-  - project: 'ops/k8s'
-    file: 'Deploy.ci.yml'
+  - '.gitlab/Deploy.ci.yml'

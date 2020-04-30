@@ -1,0 +1,50 @@
+.deploy:
+  image: $CI_REGISTRY/ops/k8s:latest
+  stage: deploy
+  script:
+    - |
+      function prepare_files() {
+        cd k8s/prod
+        echo CI Creds - "$CI_DEPLOY_USER":"$CI_DEPLOY_PASSWORD"
+
+        if [ -z "$LF_ADDITIONAL_HOST" ]
+        then
+          envsubst < overlay-no-additional.yml > overlay-ingress.yml
+        else
+          envsubst < overlay.yml > overlay-ingress.yml
+        fi
+        envsubst < kustomization.tpl.yml > kustomization.yml
+        cd ../..
+      }
+
+      function ensure_namespace() {
+        kubectl describe namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
+      }
+    - kubectl version
+    - ensure_namespace
+    - prepare_files
+    - cd k8s/base
+    - kubectl create secret docker-registry regcred --docker-username="$CI_DEPLOY_USER" --docker-password="$CI_DEPLOY_PASSWORD" --docker-server="$CI_REGISTRY" --dry-run=true -o yaml > secret.yml
+    - cd ../prod
+    - kubectl apply -k . --dry-run=true -o yaml
+    - kubectl apply -k .
+    - kubectl rollout status -n "$KUBE_NAMESPACE" -w deployment/"$CI_ENVIRONMENT_SLUG"-"$LF_NAME"-dep
+    - echo App deployed on "$CI_ENVIRONMENT_SLUG"."$LF_SUBDOMAIN"."$KUBE_INGRESS_BASE_DOMAIN"
+
+.stop_deploy:
+  image: $CI_REGISTRY/ops/k8s:latest
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - echo "Deleting deployment, ingress, service and secrets from namespace $KUBE_NAMESPACE"
+    - kubectl delete ingress "$CI_ENVIRONMENT_SLUG"-"$LF_NAME"-ingress -n "$KUBE_NAMESPACE" --wait=true
+    - kubectl delete deployment.apps "$CI_ENVIRONMENT_SLUG"-"$LF_NAME"-dep -n "$KUBE_NAMESPACE"
+    - kubectl delete service "$CI_ENVIRONMENT_SLUG"-"$LF_NAME"-svc -n "$KUBE_NAMESPACE"
+    - kubectl delete secret "$CI_ENVIRONMENT_SLUG"-"$LF_NAME"-regcred -n "$KUBE_NAMESPACE"
+    - sleep 10 # hack to wait for ingress to get deleted
+    - kubectl delete secret "$CI_ENVIRONMENT_SLUG"-apps-lostfoil-com -n "$KUBE_NAMESPACE"
+    - echo done!
+  when: manual
+  environment:
+    action: stop
