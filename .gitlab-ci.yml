@@ -27,7 +27,13 @@ build-go:
       - config/
   script:
     - cp $PROD_CONF config/config.yml
-    - make build-static
+    - GO111MODULE='off' go get -u github.com/go-bindata/go-bindata/...
+    - cd pkg/ui/react-app && yarn --frozen-lockfile
+    - yarn build
+    - cd ../../..
+    - rm pkg/ui/bindata.go || true
+    - go-bindata -pkg ui -o pkg/ui/bindata.go -prefix "pkg/ui/react-app/build" pkg/ui/react-app/build/...
+    - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o $(BUILD_DIR)/gonotify ./cmd/gonotify
 
 build:
   extends: .build
