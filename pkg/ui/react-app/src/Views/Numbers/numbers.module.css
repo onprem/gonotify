@@ -12,7 +12,7 @@
 
 .card {
   composes: card from '../Groups/groups.module.css';
-  width: 280px;
+  width: 300px;
   height: 280px;
 }
 
@@ -30,7 +30,7 @@
 
 .btn {
   composes: btn from '../Groups/groups.module.css';
-  background: var(--colorBrand-light)
+  background: var(--colorBrand-light);
 }
 
 .form {
@@ -39,4 +39,37 @@
 
 .formBtn {
   composes: formBtn from '../Groups/groups.module.css';
+  background: var(--colorBrand-light);
+}
+
+.addBtn {
+  composes: addBtn from '../Groups/groups.module.css';
+}
+
+.delBtn {
+  composes: formBtn from '../Groups/groups.module.css';
+  background: var(--colorAccent);
+}
+
+.ph {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.trashBtn {
+  background: transparent;
+  color: var(--colorGray);
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+.trashBtn > svg {
+  height: 1.2em;
+}
+
+.trashBtn:hover {
+  color: var(--colorDanger);
 }
