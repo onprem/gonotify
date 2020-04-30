@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import Nav from './Nav';
 import Groups from 'Views/Groups';
 import Numbers from 'Views/Numbers';
+import GroupDetails from 'Views/GroupDetails';
 
 import styles from './dashboard.module.css';
 
@@ -26,6 +27,9 @@ const Dashboard = () => {
           <Switch>
             <Route exact path="/dashboard/groups">
               <Groups groups={data.groups} />
+            </Route>
+            <Route exact path="/dashboard/groups/:name">
+              <GroupDetails groups={data.groups} />
             </Route>
             <Route exact path="/dashboard/numbers">
               <Numbers groups={data.groups} />

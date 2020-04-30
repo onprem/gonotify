@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 
 import Button from 'Components/Button';
 import { Text } from 'Components/Form';
@@ -62,7 +63,9 @@ const Card = ({ name, id, groups }) => {
     <>
       <div className={styles.card}>
         <div className={styles.up}>
-          <h3 className={styles.cardName}>{name}</h3>
+          <Link to={`/dashboard/groups/${name}`}>
+            <h3 className={styles.cardName}>{name}</h3>
+          </Link>
           <p className={styles.cardDetail}>ID: {id}</p>
           <p className={styles.cardDetail}>Members: {groups}</p>
         </div>

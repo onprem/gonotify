@@ -1,0 +1,58 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.heading {
+  text-transform: capitalize;
+  font-size: 2.2em;
+  font-weight: 600;
+  margin: 0.4em 0;
+}
+
+.sub {
+  font-size: 1.5em;
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.07em;
+}
+
+.cards {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4em;
+}
+
+.card {
+  composes: card from '../Groups/groups.module.css';
+  width: 280px;
+  height: 280px;
+}
+
+.content {
+  composes: up from '../Groups/groups.module.css';
+}
+
+.cardName {
+  composes: cardName from '../Groups/groups.module.css';
+}
+
+.cardDetail {
+  composes: cardDetail from '../Groups/groups.module.css';
+}
+
+.btn {
+  composes: btn from '../Groups/groups.module.css';
+  background: var(--colorAccent)
+}
+
+.form {
+  composes: form from '../Groups/groups.module.css';
+}
+
+.formBtn {
+  composes: formBtn from '../Groups/groups.module.css';
+}
