@@ -1,0 +1,79 @@
+variables:
+  # Project Deployemnt specific variables
+  LF_NAME: gonotify
+  LF_SUBDOMAIN: gonotify
+
+stages:
+  - build-local
+  - build
+  - deploy
+
+build-go:
+  image:
+    name: golang:alpine
+  stage: build-local
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.go
+  cache:
+    key: go-node-deps
+    paths:
+      - .go/pkg/mod/
+      - pkg/ui/react-app/node_modules/
+  artifacts:
+    when: on_success
+    expire_in: 3d
+    paths:
+      - build/
+      - config/
+  script:
+    - cp $PROD_CONF config/config.yml
+    - make build-static
+
+build:
+  extends: .build
+  needs:
+    - job: build-go
+      artifacts: true
+
+
+deploy-prod:
+  extends: .deploy
+  variables:
+    LF_ADDITIONAL_HOST: "gonotify.xyz"
+  only:
+    - master
+  environment:
+    name: production
+    url: https://$CI_ENVIRONMENT_SLUG.$LF_SUBDOMAIN.$KUBE_INGRESS_BASE_DOMAIN
+    on_stop: stop-prod
+
+stop-prod:
+  extends: .stop_deploy
+  only:
+    - master
+  environment:
+    name: production
+
+deploy-stg:
+  extends: .deploy
+  variables:
+    LF_ADDITIONAL_HOST: "dev.gonotify.xyz"
+  only:
+    - dev
+  environment:
+    name: staging
+    url: https://$CI_ENVIRONMENT_SLUG.$LF_SUBDOMAIN.$KUBE_INGRESS_BASE_DOMAIN
+    on_stop: stop-stg
+
+stop-stg:
+  extends: .stop_deploy
+  only:
+    - dev
+  environment:
+    name: staging
+
+include:
+  - project: 'ops/k8s'
+    file: 'Build.template.yml'
+  - project: 'ops/k8s'
+    file: 'Deploy.ci.yml'

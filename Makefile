@@ -64,6 +64,11 @@ build: assets
 	@echo ">> building $(PROJECTNAME) binary"
 	@go build -o $(BUILD_DIR)/gonotify ./cmd/gonotify
 
+.PHONY: build-static
+build-static: ## Builds a statically linked binary for easy deployment
+build-static: assets
+	@echo ">> building statically linked $(PROJECTNAME) binary"
+	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o $(BUILD_DIR)/gonotify ./cmd/gonotify
 
 .PHONY: assets
 assets: ## Repacks all static assets into go file for easier deploy.

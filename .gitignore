@@ -17,5 +17,6 @@
 build/
 
 config/config.yml
+config/config.prod.yml
 gonotify.db
 cmd/gonotify/gonotify
