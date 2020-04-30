@@ -13,12 +13,13 @@ import styles from './numbers.module.css';
 
 const AddToGroup = ({ numberID, groups, setIsOpen }) => {
   const { handleSubmit, register, errors } = useForm();
-  const [sendMsg, { isValidating }] = useSWRPost('/api/v1/groups/add/whatsapp', {
+  const [sendMsg, { isValidating }] = useSWRPost('/api/v1/whatsapps/group/add', {
     onSuccess: (data) => {
       if (data.error) toast.error(data.error);
       else {
         toast.success(data.message);
         mutate('/api/v1/numbers');
+        mutate('/api/v1/groups')
         setIsOpen(false);
       }
     },
@@ -26,7 +27,7 @@ const AddToGroup = ({ numberID, groups, setIsOpen }) => {
   });
 
   useEffect(() => {
-    const fields = ['phone', 'password'];
+    const fields = ['groupID', 'numberID'];
     fields.forEach((f) => {
       if (errors[f]?.message) toast.error(errors[f].message);
     });

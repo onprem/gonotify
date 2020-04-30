@@ -385,3 +385,56 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 		"message": "number added to group successfully",
 	})
 }
+
+func (api *API) handleRemoveWhatsAppFromGroup(c *gin.Context) {
+	logger := log.With(api.logger, "route", "removeWhatsAppFromGroup")
+
+	type input struct {
+		ID int `json:"id" binding:"required"`
+	}
+
+	var i input
+	uID := int(c.MustGet("id").(float64))
+
+	if err := c.ShouldBind(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "id is required",
+		})
+		level.Debug(logger).Log("err", err)
+		return
+	}
+
+	var tmpID int
+	err := api.DB.QueryRow(
+		`SELECT whatsappNodes.id FROM whatsappNodes
+		INNER JOIN groups ON whatsappNodes.groupID = groups.id
+		WHERE whatsappNodes.id = ? AND groups.userID = ?`,
+		i.ID,
+		uID,
+	).Scan(&tmpID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "whatsapp node not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = api.DB.Exec(
+		`DELETE FROM whatsappNodes WHERE id = ?`,
+		i.ID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "node deleted from group",
+	})
+}

@@ -46,13 +46,16 @@
 
 .btn {
   composes: btn from '../Groups/groups.module.css';
-  background: var(--colorAccent)
+  background: var(--colorAccent);
 }
 
 .form {
   composes: form from '../Groups/groups.module.css';
+  width: 25vw;
+  max-width: 350px;
 }
 
 .formBtn {
   composes: formBtn from '../Groups/groups.module.css';
+  background: var(--colorAccent);
 }

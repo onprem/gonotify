@@ -74,7 +74,10 @@ func (api *API) Register() {
 
 		v1.GET("/groups", api.withAuth(), api.queryGroups)
 		v1.POST("/groups/add", api.withAuth(), api.handleAddGroup)
-		v1.POST("/groups/add/whatsapp", api.withAuth(), api.handleAddWhatsAppToGroup)
+		// v1.POST("/groups/add/whatsapp", api.withAuth(), api.handleAddWhatsAppToGroup)
+
+		v1.POST("/whatsapps/group/add", api.withAuth(), api.handleAddWhatsAppToGroup)
+		v1.POST("/whatsapps/group/remove", api.withAuth(), api.handleRemoveWhatsAppFromGroup)
 
 		v1.POST("/incoming", gin.BasicAuth(api.conf.WebHookAccount), api.handleIncoming)
 	}
