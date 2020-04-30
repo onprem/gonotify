@@ -6,4 +6,6 @@ ADD config/config.yml /config/config.yml
 
 EXPOSE 3333
 
+RUN mkdir -p /database
+
 CMD ["/gonotify"]
