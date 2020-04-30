@@ -8,9 +8,16 @@ The basic idea is to provide the user with a service that he/she can use to send
 
 ## Installation
 
+### Pre-built binaries
+
+Pre-built binaries are available on the [Release page](https://github.com/prmsrswt/gonotify/releases).
+
+### Build from source
+
 - You would need `go` to build the binary.
 - The WebUI is built using ReactJS, and we use `yarn` as package manager. So you would need `node` and `yarn` too.
-- Run `make build` in project root. This will build a binary at `build/gonotify`
+- Run `make build` in project root. This will build a binary at `build/gonotify`.
+- Run `make build-cli` to build the `gncli` command line client.
 
 ## Configuration
 
@@ -31,6 +38,33 @@ The basic idea is to provide the user with a service that he/she can use to send
 
 - **Number:** You can add multiple Phone numbers to your account. You need to verify each phone number once.
 - **Group:** A group is a collection of phone numbers. The notifications are always targeted towards a Group.
+
+### CLI usage
+
+The `gncli` is still work-in-progress. You can login and send messages as of now.
+
+#### Login
+
+```
+$ gncli login --number +911234123456 --password pass1234
+Logged in successfully
+```
+
+#### Send Message
+
+To the `default` group
+
+```
+$ gncli send Hola people!
+Message sent successfully
+```
+
+Or you can choose a specific group
+
+```
+$ gncli send -g work Hola people!
+Message sent successfully
+```
 
 ### Example API usage
 
@@ -69,7 +103,7 @@ Response:
 
 ## Roadmap
 
-- A CLI to easiliy access the API. (In Progress)
+- A full-featured CLI to easiliy access the API. (In Progress)
 - Expand to services other than WhatsApp (SMS, Telegram, Slack, Email etc.).
 
 ## Contributing
