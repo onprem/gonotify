@@ -22,13 +22,14 @@ const SendMsg = ({ name, setIsOpen }) => {
       else {
         toast.success(data.message);
         setIsOpen(false);
+        mutate('/api/v1/notifications')
       }
     },
     onError: toast.error,
   });
 
   useEffect(() => {
-    const fields = ['phone', 'password'];
+    const fields = ['group', 'body'];
     fields.forEach((f) => {
       if (errors[f]?.message) toast.error(errors[f].message);
     });
@@ -38,7 +39,7 @@ const SendMsg = ({ name, setIsOpen }) => {
     <form className={styles.form} onSubmit={handleSubmit(sendMsg)}>
       <input
         type="hidden"
-        name="name"
+        name="group"
         value={name}
         ref={register({
           required: 'Group name is required',

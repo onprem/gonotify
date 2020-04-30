@@ -11,11 +11,12 @@ import (
 
 // Notification represent a single message object
 type Notification struct {
-	ID      int    `json:"id"`
-	UserID  int    `json:"userID"`
-	GroupID int    `json:"groupID"`
-	Body    string `json:"body"`
-	TimeSt  string `json:"timeSt"`
+	ID        int    `json:"id"`
+	UserID    int    `json:"userID"`
+	GroupID   int    `json:"groupID"`
+	Body      string `json:"body"`
+	TimeSt    string `json:"timeSt"`
+	GroupName string `json:"groupName"`
 }
 
 func (api *API) queryNotifications(c *gin.Context) {
@@ -26,7 +27,10 @@ func (api *API) queryNotifications(c *gin.Context) {
 	notifications := []Notification{}
 
 	rows, err := api.DB.Query(
-		`SELECT id, userID, groupID, body, timeSt FROM notifications WHERE userID = ?`,
+		`SELECT notifications.id, notifications.userID, notifications.groupID, notifications.body,
+		notifications.timeSt, groups.name FROM notifications
+		LEFT JOIN groups ON notifications.groupID = groups.id
+		WHERE notifications.userID = ?`,
 		uID,
 	)
 
@@ -39,7 +43,7 @@ func (api *API) queryNotifications(c *gin.Context) {
 
 	for rows.Next() {
 		var n Notification
-		err = rows.Scan(&n.ID, &n.UserID, &n.GroupID, &n.Body, &n.TimeSt)
+		err = rows.Scan(&n.ID, &n.UserID, &n.GroupID, &n.Body, &n.TimeSt, &n.GroupName)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
@@ -51,6 +55,6 @@ func (api *API) queryNotifications(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"numbers": notifications,
+		"notifications": notifications,
 	})
 }

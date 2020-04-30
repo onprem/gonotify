@@ -39,6 +39,7 @@ function App() {
       <SWRConfig
         value={{
           fetcher: (...args) => fetcher({ Authorization: `Bearer ${token}` }, ...args),
+          revalidateOnFocus: false,
         }}
       >
         <div className={styles.App}>

@@ -29,7 +29,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 	logger := log.With(api.logger, "route", "whatsapp")
 
 	type message struct {
-		Group string `json:"group" binding:"-"`
+		Group string `json:"group" binding:"alpha"`
 		Body  string `json:"body" binding:"required"`
 	}
 
@@ -44,6 +44,8 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 		})
 		return
 	}
+
+	json.Group = strings.ToLower(json.Group)
 
 	if json.Group == "" {
 		json.Group = "default"
@@ -66,7 +68,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 		return
 	}
 
-	err = sendWhatsApp(api.DB, uID, groupID, json.Body, api.TwilioClient, api.conf.WhatsAppFrom, api.conf.NotifTmpl)
+	err = sendWhatsApp(api.DB, uID, groupID, json.Body, api.TwilioClient, api.conf.WhatsAppFrom, api.conf.NotifTmpl, logger)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		level.Error(logger).Log("err", err)
@@ -78,7 +80,7 @@ func (api *API) handleWhatsApp(c *gin.Context) {
 	})
 }
 
-func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twilio, from string, tmpl *template.Template) error {
+func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twilio, from string, tmpl *template.Template, logger log.Logger) error {
 	res, err := db.Exec(
 		`INSERT INTO notifications(userID, groupID, body, timeSt) VALUES (?, ?, ?, ?)`,
 		userID,
@@ -143,7 +145,9 @@ func sendWhatsApp(db *sql.DB, userID, groupID int, body string, tc *twilio.Twili
 				errors = append(errors, err)
 				continue
 			}
+			level.Debug(logger).Log("sending", true, "phone", phone)
 		} else {
+			level.Debug(logger).Log("sending", false, "phone", phone)
 			pendingNumbers = append(pendingNumbers, num{id, phone})
 		}
 	}

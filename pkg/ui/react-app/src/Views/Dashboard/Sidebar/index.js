@@ -7,6 +7,7 @@ import { ReactComponent as MonoLogo } from 'Assets/logo/mono.svg';
 import { ReactComponent as AccIcon } from 'Assets/icons/acc.svg';
 import { ReactComponent as GroupIcon } from 'Assets/icons/group.svg';
 import { ReactComponent as NumIcon } from 'Assets/icons/member.svg';
+import { ReactComponent as SendIcon } from 'Assets/icons/send.svg';
 import { ReactComponent as HelpIcon } from 'Assets/icons/help.svg';
 
 import styles from './sidebar.module.css';
@@ -25,6 +26,9 @@ const Sidebar = () => {
           </NavLink>
           <NavLink activeClassName={styles.active} className={styles.link} to="/dashboard/numbers">
             <NumIcon className={styles.icon} /> Numbers
+          </NavLink>
+          <NavLink activeClassName={styles.active} className={styles.link} to="/dashboard/notifs">
+            <SendIcon className={styles.icon} /> Notifications
           </NavLink>
         </div>
       </div>

@@ -7,6 +7,7 @@ import Nav from './Nav';
 import Account from 'Views/Account';
 import Groups from 'Views/Groups';
 import Numbers from 'Views/Numbers';
+import Notifications from 'Views/Notifications';
 import GroupDetails from 'Views/GroupDetails';
 
 import styles from './dashboard.module.css';
@@ -38,6 +39,9 @@ const Dashboard = () => {
             </Route>
             <Route exact path="/dashboard/numbers">
               <Numbers groups={gdata.groups} />
+            </Route>
+            <Route exact path="/dashboard/notifs">
+              <Notifications groups={gdata.groups} />
             </Route>
           </Switch>
         ) : (

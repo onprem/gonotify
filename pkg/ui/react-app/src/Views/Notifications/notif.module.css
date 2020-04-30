@@ -1,0 +1,51 @@
+.notif {
+  composes: groups from '../Groups/groups.module.css';
+}
+
+.heading {
+  composes: heading from '../Groups/groups.module.css';
+}
+
+.list {
+  width: 100%;
+  max-height: 60vh;
+  overflow: auto;
+  flex-direction: column;
+  align-items: center;
+}
+
+.row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5em 1em;
+  box-sizing: border-box;
+}
+
+.row:nth-child(even) {
+  background: rgba(0,0,0,0.1);
+}
+
+.topRow {
+  composes: row;
+  font-weight: 600;
+  border-bottom: solid 2px var(--colorDark);
+}
+
+.idSpan {
+  width: 5%;
+}
+
+.groupSpan {
+  width: 10%;
+  text-transform: capitalize;
+}
+
+.timeSpan {
+  width: 20%;
+}
+
+.bodySpan {
+  width: 65%;
+}
