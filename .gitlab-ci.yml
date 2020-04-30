@@ -26,7 +26,7 @@ build-go:
       - config/
   script:
     - cp $PROD_CONF config/config.yml
-    - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o $(BUILD_DIR)/gonotify ./cmd/gonotify
+    - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/gonotify ./cmd/gonotify
 
 build:
   extends: .build
