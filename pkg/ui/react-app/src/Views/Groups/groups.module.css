@@ -27,7 +27,7 @@
   justify-content: space-between;
   background: white;
   border-radius: 6px;
-  box-shadow: 0px 0px 20px #D7DEE365;
+  box-shadow: 0px 0px 20px #d7dee365;
   padding: 2em;
   box-sizing: border-box;
   margin: 2em 3em;
@@ -44,7 +44,24 @@
   font-size: 1.6em;
   text-transform: capitalize;
   margin: 0.5em 0;
+  color: var(--colorDark);
+  position: relative;
+  --width: 0%;
+}
+
+.cardName:hover {
   color: var(--colorFG);
+  --width: 100%
+}
+
+.cardName::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  border-bottom: solid 2px var(--colorFG);
+  width: var(--width);
+  transition: all 0.3s ease-in;
 }
 
 .cardDetail {
@@ -90,11 +107,39 @@
   color: var(--colorGray);
 }
 
-.addBtn:hover{
+.addBtn:hover {
   color: var(--colorShadow);
 }
 
 .addBtn > svg {
   margin-bottom: 1em;
   width: 3em;
+}
+
+.delBtn {
+  composes: formBtn;
+  background: var(--colorAccent);
+}
+
+.ph {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.trashBtn {
+  background: transparent;
+  color: var(--colorGray);
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+.trashBtn > svg {
+  height: 1.2em;
+}
+
+.trashBtn:hover {
+  color: var(--colorDanger);
 }

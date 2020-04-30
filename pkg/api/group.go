@@ -147,3 +147,81 @@ func (api *API) handleAddGroup(c *gin.Context) {
 		"message": "group created successfully",
 	})
 }
+
+func (api *API) handleRemoveGroup(c *gin.Context) {
+	logger := log.With(api.logger, "route", "removeGroup")
+
+	type input struct {
+		ID int `json:"id" binding:"required"`
+	}
+
+	var i input
+	uID := int(c.MustGet("id").(float64))
+
+	if err := c.ShouldBind(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "all fields are required",
+		})
+		return
+	}
+
+	var group Group
+	err := api.DB.QueryRow(
+		`SELECT id, name FROM groups WHERE id = ? AND userID = ?`,
+		i.ID,
+		uID,
+	).Scan(&group.ID, &group.Name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "given group doesn't exist",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	if group.Name == "default" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "cannot delete default group",
+		})
+		return
+	}
+
+	tx, err := api.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
+		`DELETE FROM groups WHERE id = ? AND userID = ?`,
+		i.ID,
+		uID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = tx.Exec(
+		`DELETE FROM whatsappNodes WHERE groupID = ?`,
+		i.ID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	tx.Commit()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "group successfully deleted",
+	})
+}

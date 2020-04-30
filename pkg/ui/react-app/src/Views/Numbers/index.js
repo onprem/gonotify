@@ -88,7 +88,7 @@ const RemoveNumber = ({ numberID, setIsOpen }) => {
   });
 
   useEffect(() => {
-    const fields = ['numberID'];
+    const fields = ['id'];
     fields.forEach((f) => {
       if (errors[f]?.message) toast.error(errors[f].message);
     });
@@ -96,7 +96,7 @@ const RemoveNumber = ({ numberID, setIsOpen }) => {
 
   const onSubmit = (v) => {
     removeNum({
-      numberID: Number(v.numberID),
+      id: Number(v.id),
     });
   };
 
@@ -104,7 +104,7 @@ const RemoveNumber = ({ numberID, setIsOpen }) => {
     <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
       <input
         type="hidden"
-        name="numberID"
+        name="id"
         value={numberID}
         ref={register({
           required: 'NumberID is required',

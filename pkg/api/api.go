@@ -71,9 +71,11 @@ func (api *API) Register() {
 		v1.GET("/numbers", api.withAuth(), api.queryNumbers)
 		v1.POST("/numbers/add", api.withAuth(), api.handleAddNumber)
 		v1.POST("/numbers/verify", api.withAuth(), api.handleVerifyNumber)
+		v1.POST("/numbers/remove", api.withAuth(), api.handleRemoveNumber)
 
 		v1.GET("/groups", api.withAuth(), api.queryGroups)
 		v1.POST("/groups/add", api.withAuth(), api.handleAddGroup)
+		v1.POST("/groups/remove", api.withAuth(), api.handleRemoveGroup)
 		// v1.POST("/groups/add/whatsapp", api.withAuth(), api.handleAddWhatsAppToGroup)
 
 		v1.POST("/whatsapps/group/add", api.withAuth(), api.handleAddWhatsAppToGroup)

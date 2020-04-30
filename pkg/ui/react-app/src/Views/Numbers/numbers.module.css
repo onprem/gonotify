@@ -52,24 +52,9 @@
 }
 
 .ph {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  composes: ph from '../Groups/groups.module.css';
 }
 
 .trashBtn {
-  background: transparent;
-  color: var(--colorGray);
-  box-shadow: none;
-  padding: 0;
-  margin: 0;
-}
-
-.trashBtn > svg {
-  height: 1.2em;
-}
-
-.trashBtn:hover {
-  color: var(--colorDanger);
+  composes: trashBtn from '../Groups/groups.module.css';
 }

@@ -270,3 +270,92 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		"message": "phone number successfully verified",
 	})
 }
+
+func (api *API) handleRemoveNumber(c *gin.Context) {
+	logger := log.With(api.logger, "route", "removeNumber")
+
+	type input struct {
+		ID int `json:"id" binding:"required"`
+	}
+
+	var i input
+	uID := int(c.MustGet("id").(float64))
+
+	if err := c.ShouldBind(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "all fields are required",
+		})
+		return
+	}
+
+	var num Number
+	err := api.DB.QueryRow(
+		`SELECT id, phone FROM numbers WHERE id = ? AND userID = ?`,
+		i.ID,
+		uID,
+	).Scan(&num.ID, &num.Phone)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "given phone number doesn't exist",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	var user User
+	err = api.DB.QueryRow(
+		`SELECT phone FROM users WHERE id = ?`,
+		uID,
+	).Scan(&user.Phone)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	if user.Phone == num.Phone {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "cannot delete primary phone number",
+		})
+		return
+	}
+
+	tx, err := api.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
+		`DELETE FROM numbers WHERE id = ? AND userID = ?`,
+		i.ID,
+		uID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	_, err = tx.Exec(
+		`DELETE FROM whatsappNodes WHERE numberID = ?`,
+		i.ID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
+	tx.Commit()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "phone number successfully deleted",
+	})
+}
