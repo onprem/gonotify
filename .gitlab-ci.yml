@@ -10,7 +10,7 @@ stages:
 
 build-go:
   image:
-    name: golang:alpine
+    name: golang
   stage: build-local
   variables:
     GOPATH: $CI_PROJECT_DIR/.go
