@@ -83,6 +83,9 @@ func (api *API) queryGroups(c *gin.Context) {
 		}
 
 		g.WhatsAppNodes = wNodes[g.ID]
+		if g.WhatsAppNodes == nil {
+			g.WhatsAppNodes = []WhatsAppNode{}
+		}
 
 		groups = append(groups, g)
 	}

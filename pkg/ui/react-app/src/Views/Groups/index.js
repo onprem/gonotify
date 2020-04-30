@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
+import { mutate } from 'swr';
 
 import Button from 'Components/Button';
 import { Text } from 'Components/Form';
 import Modal from 'Components/Modal';
 import { ReactComponent as SendIcon } from 'Assets/icons/send.svg';
+import { ReactComponent as PlusIcon } from 'Assets/icons/plus.svg';
 import useSWRPost from 'Hooks/useSWRPost';
 import toast from 'Utils/toast';
 
@@ -80,16 +82,70 @@ const Card = ({ name, id, groups }) => {
   );
 };
 
-const Groups = ({ groups }) => {
+const NewGroup = ({ setIsOpen }) => {
+  const { handleSubmit, register, errors } = useForm();
+  const [addGroup, { isValidating }] = useSWRPost('/api/v1/groups/add', {
+    onSuccess: (data) => {
+      if (data.error) toast.error(data.error);
+      else {
+        toast.success(data.message);
+        mutate('/api/v1/groups');
+        setIsOpen(false);
+      }
+    },
+    onError: toast.error,
+  });
+
+  useEffect(() => {
+    const fields = ['name'];
+    fields.forEach((f) => {
+      if (errors[f]?.message) toast.error(errors[f].message);
+    });
+  });
+
   return (
-    <div className={styles.groups}>
-      <h2 className={styles.heading}>All Groups</h2>
-      <div className={styles.cards}>
-        {groups.map((g) => (
-          <Card key={g.id} name={g.name} id={g.id} groups={g.whatsappNodes.length} />
-        ))}
+    <form className={styles.form} onSubmit={handleSubmit(addGroup)}>
+      <Text
+        name="name"
+        label="Name"
+        placeholder="ex. workplace"
+        inpRef={register({
+          required: 'Name is required',
+          pattern: {
+            value: /^[a-zA-Z]+$/,
+            message: 'Only alphabetic characters are allowed',
+          },
+        })}
+      />
+      <Button type="submit" className={styles.formBtn} disabled={isValidating}>
+        ADD <PlusIcon />
+      </Button>
+    </form>
+  );
+};
+
+const Groups = ({ groups }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <div className={styles.groups}>
+        <h2 className={styles.heading}>All Groups</h2>
+        <div className={styles.cards}>
+          {groups.map((g) => (
+            <Card key={g.id} name={g.name} id={g.id} groups={g.whatsappNodes?.length || 0} />
+          ))}
+          <div className={styles.card}>
+            <Button className={styles.addBtn} onClick={() => setIsOpen(true)}>
+              <PlusIcon /> Add Group
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+      <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
+        <NewGroup setIsOpen={setIsOpen} />
+      </Modal>
+    </>
   );
 };
 
