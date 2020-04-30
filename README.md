@@ -25,6 +25,48 @@ The basic idea is to provide the user with a service that he/she can use to send
 - Send notification to all numbers in a group.
 - Use the API to do all of this programmatically.
 
+## Usage
+
+### Concepts
+
+- **Number:** You can add multiple Phone numbers to your account. You need to verify each phone number once.
+- **Group:** A group is a collection of phone numbers. The notifications are always targeted towards a Group.
+
+### Example API usage
+
+The examples use [HTTPie](https://httpie.org) as client.
+
+GoNotify server issues JWT token on successfull authentication. `Authorization` header is used to supply the token to the backend. The `Authorization` header's value must be in the form of `Bearer <jwt token>`.
+
+#### Login
+
+```bash
+$ http :8080/api/v1/login phone="9912312345" password="password"
+```
+
+Response:
+
+```json
+{
+  "message": "login successful",
+  "token": "eyJhbGciOiJIUjhggdgnR5cCI6IkpXVCJ9.eyJleHjkgJFgfhvj3ODcsImlkIjoyfQ.TsxdOsxf0cOt5cNNSgOx5CH4oxxtGogPKcA0XPPyhnTaKhc4xpmcsJV_GY56bkghfhgdh0jO1TtSolOw8GT3TGtQyA"
+}
+```
+
+#### Send a message
+
+```bash
+$ http :8080/api/v1/send authorization:"Bearer eyJhbGciOiJIUjhggdgnR5cCI6IkpXVCJ9.eyJleHjkgJFgfhvj3OgggttmlkIjoyfQ.TsxdOsxf0cOt5cNNSgOx5CH4oxxtGogPKcA0XPPyhnTaKhc4xpmcsJV_GY56bkghfhgdh0jO1TtSolOw8GT3TjghyyA" body="test message" group="default"
+```
+
+Response:
+
+```json
+{
+  "message": "Message sent successfully"
+}
+```
+
 ## Roadmap
 
 - A CLI to easiliy access the API. (In Progress)
