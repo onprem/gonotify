@@ -4,6 +4,7 @@ import useSWR from 'swr';
 
 import Sidebar from './Sidebar';
 import Nav from './Nav';
+import Account from 'Views/Account';
 import Groups from 'Views/Groups';
 import Numbers from 'Views/Numbers';
 import GroupDetails from 'Views/GroupDetails';
@@ -11,28 +12,32 @@ import GroupDetails from 'Views/GroupDetails';
 import styles from './dashboard.module.css';
 
 const Dashboard = () => {
-  const { data, error } = useSWR('/api/v1/groups');
+  const { data: gdata, error: gerror } = useSWR('/api/v1/groups');
+  const { data: udata, error: uerror } = useSWR('/api/v1/user');
 
   return (
     <div className={styles.dash}>
       <Sidebar />
       <section className={styles.main}>
-        <Nav />
+        <Nav user={udata} />
         <header className={styles.header}>
           <h1 className={styles.heading}>Dashboard</h1>
         </header>
-        {error ? (
+        {(gerror || uerror) ? (
           <h1>Some Error Occured</h1>
-        ) : data ? (
+        ) : (gdata && udata) ? (
           <Switch>
+            <Route exact path="/dashboard/account">
+              <Account user={udata} />
+            </Route>
             <Route exact path="/dashboard/groups">
-              <Groups groups={data.groups} />
+              <Groups groups={gdata.groups} />
             </Route>
             <Route exact path="/dashboard/groups/:name">
-              <GroupDetails groups={data.groups} />
+              <GroupDetails groups={gdata.groups} />
             </Route>
             <Route exact path="/dashboard/numbers">
-              <Numbers groups={data.groups} />
+              <Numbers groups={gdata.groups} />
             </Route>
           </Switch>
         ) : (

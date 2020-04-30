@@ -24,6 +24,10 @@
   composes: cardName from '../Groups/groups.module.css';
 }
 
+.cardName::after {
+  display: none;
+}
+
 .cardDetail {
   composes: cardDetail from '../Groups/groups.module.css';
 }

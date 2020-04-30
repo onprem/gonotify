@@ -1,0 +1,14 @@
+.container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.acc {
+  composes: groups from '../Groups/groups.module.css';
+  width: 50%;
+}
+
+.heading {
+  composes: heading from '../Groups/groups.module.css';
+}
