@@ -30,6 +30,9 @@ build-go:
 
 build:
   extends: .build
+  only:
+    - master
+    - dev
   needs:
     - job: build-go
       artifacts: true
