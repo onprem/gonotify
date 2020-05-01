@@ -373,6 +373,19 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 
 	oldTime := time.Date(1950, time.January, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339)
 
+	var tmpTime string
+	err = api.DB.QueryRow(
+		`SELECT id FROM whatsappNodes WHERE numberID = ?`,
+		i.NumberID,
+	).Scan(&tmpTime)
+	if err == nil {
+		oldTime = tmpTime
+	} else if err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		level.Error(logger).Log("err", err)
+		return
+	}
+
 	_, err = api.DB.Exec(
 		`INSERT INTO whatsappNodes(groupID, numberID, lastMsgReceived) VALUES(?, ?, ?)`,
 		i.GroupID,
