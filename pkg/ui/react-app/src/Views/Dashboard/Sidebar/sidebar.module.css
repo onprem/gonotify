@@ -78,3 +78,40 @@
   margin-right: 1em;
   width: 1.2em;
 }
+
+@media only screen and (max-width: 800px) {
+  .sidebar {
+    padding: 3em 0.5em;
+  }
+
+  .logo {
+    height: unset;
+    width: 100%;
+    margin: 0;
+  }
+
+  .linkTitle {
+    display: none;
+  }
+
+  .link {
+    justify-content: center;
+    width: 100%;
+    padding: 1.2em 0;
+  }
+
+  .icon {
+    margin-right: 0;
+    width: 40%;
+  }
+
+  .help {
+    padding: 0.5em;
+    width: unset;
+    margin-bottom: 56px;
+  }
+
+  .helpicon {
+    margin-right: 0;
+  }
+}

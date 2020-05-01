@@ -59,3 +59,29 @@
   composes: formBtn from '../Groups/groups.module.css';
   background: var(--colorAccent);
 }
+
+@media only screen and (max-width: 800px) {
+  .heading {
+    margin-left: 15px;
+  }
+  
+  .sub {
+    margin-left: 15px;
+  }
+
+  .cards {
+    margin-top: 2em;
+    justify-content: center;
+  }
+
+  .card {
+    height: 250px;
+  }
+}
+
+@media only screen and (min-width: 800px) and (max-width: 1400px) {
+  .card {
+    width: 190px;
+    height: 200px;
+  }
+}

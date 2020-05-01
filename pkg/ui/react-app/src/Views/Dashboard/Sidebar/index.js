@@ -19,21 +19,21 @@ const Sidebar = () => {
         <MonoLogo className={styles.logo} />
         <div className={styles.nav}>
           <NavLink activeClassName={styles.active} className={styles.link} to="/dashboard/account">
-            <AccIcon className={styles.icon} /> Account
+            <AccIcon className={styles.icon} /> <span className={styles.linkTitle}>Account</span>
           </NavLink>
           <NavLink activeClassName={styles.active} className={styles.link} to="/dashboard/groups">
-            <GroupIcon className={styles.icon} /> Groups
+            <GroupIcon className={styles.icon} /> <span className={styles.linkTitle}>Groups</span>
           </NavLink>
           <NavLink activeClassName={styles.active} className={styles.link} to="/dashboard/numbers">
-            <NumIcon className={styles.icon} /> Numbers
+            <NumIcon className={styles.icon} /> <span className={styles.linkTitle}>Numbers</span>
           </NavLink>
           <NavLink activeClassName={styles.active} className={styles.link} to="/dashboard/notifs">
-            <SendIcon className={styles.icon} /> Notifications
+            <SendIcon className={styles.icon} /> <span className={styles.linkTitle}>Notifications</span>
           </NavLink>
         </div>
       </div>
       <Button className={styles.help}>
-        <HelpIcon className={styles.helpicon} /> Help
+        <HelpIcon className={styles.helpicon} /> <span className={styles.linkTitle}>Help</span>
       </Button>
     </section>
   );

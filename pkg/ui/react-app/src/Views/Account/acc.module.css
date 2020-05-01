@@ -12,3 +12,12 @@
 .heading {
   composes: heading from '../Groups/groups.module.css';
 }
+
+@media only screen and (max-width: 800px) {
+  .container {
+    flex-direction: column;
+  }
+  .acc {
+    width: 90%;
+  }
+}

@@ -27,3 +27,18 @@
   font-weight: 400;
   font-size: 2em;
 }
+
+@media only screen and (max-width: 800px) {
+  .dash {
+    --sidebar: 20%;
+  }
+
+  .main {
+    padding: 2em 1em;
+  }
+
+  .heading {
+    margin: 15px 0;
+    margin-left: 15px;
+  }
+}

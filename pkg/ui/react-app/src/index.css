@@ -35,3 +35,9 @@ a {
   --colorSuccess: #03de73;
   --colorDanger: #dc3545;
 }
+
+@media only screen and (min-width: 800px) and (max-width: 1400px) {
+  body {
+    font-size: 0.7em;
+  }
+}

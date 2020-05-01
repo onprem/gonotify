@@ -49,3 +49,24 @@
 .bodySpan {
   width: 65%;
 }
+
+@media only screen and (max-width: 800px) {
+  .row {
+    flex-wrap: wrap;
+  }
+  .idSpan {
+    width: 15%;
+  }
+  .groupSpan {
+    width: 25%;
+  }
+  .timeSpan {
+    width: 60%;
+  }
+  .bodySpan {
+    width: 100%;
+    padding: 5px 0;
+    margin-top: 8px;
+    border-top: solid 1px black;
+  }
+}

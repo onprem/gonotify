@@ -11,10 +11,30 @@
   height: 6em;
 }
 
+.links {
+  display: none;
+}
+
 .link {
   color: var(--colorBrand);
   font-size: 1.2em;
   font-weight: 500;
   letter-spacing: 0.08em;
   margin: 0 1.5em;
+}
+
+@media only screen and (max-width: 800px) {
+
+  .nav {
+    top: 2em;
+    width: 90%;
+  }
+
+  .logo {
+    height: 5em;
+  }
+
+  .links {
+    display: none;
+  }
 }

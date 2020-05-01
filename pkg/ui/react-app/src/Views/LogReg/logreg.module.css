@@ -49,8 +49,7 @@
 }
 
 .btn {
-  background: transparent linear-gradient(285deg, #f80a76 0%, #c7117d 57%, #951783 100%) 0% 0%
-    no-repeat padding-box;
+  background: linear-gradient(285deg, #f80a76 0%, #c7117d 57%, #951783 100%) 0% 0%;
   box-shadow: 17px 33px 57px #95178347;
   border-radius: 10px;
   font-size: 1.4em;
@@ -82,4 +81,40 @@
 .hr {
   width: 48%;
   margin: 2em 0 1em 0;
+}
+
+@media only screen and (max-width: 800px) {
+  .logreg {
+    flex-direction: column-reverse;
+    height: unset;
+  }
+
+  .content {
+    width: 100%;
+    margin: 10vh 0;
+  }
+
+  .picasso {
+    width: 100%;
+    height: 40vh;
+    padding: 0em 2em;
+    justify-content: center;
+  }
+
+  .tagline {
+    font-size: 2em;
+  }
+
+  .form {
+    width: 80%;
+  }
+
+  .heading {
+    font-size: 3em;
+  }
+
+  .para {
+    width: 80%;
+    text-align: center;
+  }
 }
