@@ -375,7 +375,7 @@ func (api *API) handleAddWhatsAppToGroup(c *gin.Context) {
 
 	var tmpTime string
 	err = api.DB.QueryRow(
-		`SELECT id FROM whatsappNodes WHERE numberID = ?`,
+		`SELECT lastMsgReceived FROM whatsappNodes WHERE numberID = ?`,
 		i.NumberID,
 	).Scan(&tmpTime)
 	if err == nil {
