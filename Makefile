@@ -68,7 +68,7 @@ build: assets
 build-static: ## Builds a statically linked binary for easy deployment
 build-static: assets
 	@echo ">> building statically linked $(PROJECTNAME) binary"
-	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o $(BUILD_DIR)/gonotify ./cmd/gonotify
+	@GOOS=linux go build -ldflags "-linkmode external -extldflags -static" -o $(BUILD_DIR)/gonotify-static ./cmd/gonotify
 
 .PHONY: build-cli
 build-cli: ## Builds gncli - the GoNotify CLI client.

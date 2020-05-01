@@ -15,9 +15,16 @@ spec:
         component: app
     spec:
       containers:
-      - name: app
-        image: lf-image
-        ports:
-        - containerPort: 3333
+        - name: app
+          image: lf-image
+          ports:
+          - containerPort: 3333
+          volumeMounts:
+          - mountPath: "/database"
+            name: mypd
+      volumes:
+        - name: mypd
+          persistentVolumeClaim:
+            claimName: db
       imagePullSecrets:
         - name: regcred

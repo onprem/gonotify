@@ -26,8 +26,6 @@ build-go:
       - config/
   script:
     - cp $PROD_CONF config/config.yml
-    - echo $PROD_CONF
-    - cat config/config.yml
     - GOOS=linux go build -ldflags "-linkmode external -extldflags -static" -o build/gonotify ./cmd/gonotify
 
 build:
