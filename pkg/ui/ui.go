@@ -26,7 +26,7 @@ func NewBaseUI(router *gin.Engine, logger log.Logger) (*BaseUI, error) {
 
 // Register registers all handlers for UI
 func (bu *BaseUI) Register() {
-	bu.router.NoRoute(bu.serveStatic())
+	bu.router.NoRoute(bu.serveStatic(), sayNotFound)
 }
 
 func (bu *BaseUI) serveStatic() gin.HandlerFunc {
@@ -58,6 +58,10 @@ func (bu *BaseUI) serveStatic() gin.HandlerFunc {
 		c.Writer.Header().Set("Content-Type", mimeType)
 		c.Writer.Write(data)
 	}
+}
+
+func sayNotFound(c *gin.Context) {
+	c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 }
 
 func getMime(path string) string {

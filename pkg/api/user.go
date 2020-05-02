@@ -176,6 +176,9 @@ func (api *API) handleRegister(c *gin.Context) {
 	oldTime := time.Date(1950, time.January, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339)
 	code := getVerificationCode()
 
+	// People join the sandbox by sending a message, so we can risk it
+	oldTime = time.Now().Format(time.RFC3339)
+
 	hashByte, err := bcrypt.GenerateFromPassword([]byte(i.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
