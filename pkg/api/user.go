@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prmsrswt/gonotify/pkg/api/models"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-kit/kit/log"
@@ -14,33 +16,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// User models a user in database
-type User struct {
-	ID       int
-	Name     string
-	Phone    string
-	Hash     string
-	Verified bool
-}
-
-// VerifyUser Models the verifyUser table
-type VerifyUser struct {
-	ID       int
-	UserID   int
-	NumberID int
-	Code     string
-}
-
 func (api *API) queryUser(c *gin.Context) {
-	logger := log.With(api.logger, "route", "user")
+	l := log.With(api.logger, "route", "user")
 
-	var u User
 	uID := int(c.MustGet("id").(float64))
+	u := models.User{ID: uID}
 
-	err := api.DB.QueryRow(
-		`SELECT id, name, phone, verified FROM users WHERE id = ?`,
-		uID,
-	).Scan(&u.ID, &u.Name, &u.Phone, &u.Verified)
+	err := u.GetUserByID(api.DB)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -49,22 +31,16 @@ func (api *API) queryUser(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":       u.ID,
-		"name":     u.Name,
-		"phone":    u.Phone,
-		"verified": u.Verified,
-	})
+	c.JSON(http.StatusOK, u)
 }
 
 func (api *API) handleLogin(c *gin.Context) {
-	logger := log.With(api.logger, "route", "login")
-	var user User
+	l := log.With(api.logger, "route", "login")
+	var user models.User
 
 	type input struct {
 		Phone    string `json:"phone" binding:"required"`
@@ -74,7 +50,10 @@ func (api *API) handleLogin(c *gin.Context) {
 
 	err := c.BindJSON(&i)
 	if err != nil {
-		level.Error(logger).Log("err", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "phone and password fields are required",
+		})
+		level.Error(l).Log("err", err)
 		return
 	}
 
@@ -86,20 +65,16 @@ func (api *API) handleLogin(c *gin.Context) {
 		return
 	}
 
-	i.Phone = ph
+	user.Phone = ph
 
-	err = api.DB.QueryRow(
-		"SELECT id, name, phone, hash FROM users WHERE phone = ?",
-		i.Phone,
-	).Scan(&user.ID, &user.Name, &user.Phone, &user.Hash)
+	err = user.GetUserByPhone(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid phone number or password",
 			})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-			level.Error(logger).Log("err", err)
+			throwInternalError(c, l, err)
 		}
 		return
 	}
@@ -120,8 +95,7 @@ func (api *API) handleLogin(c *gin.Context) {
 
 	tokenStr, err := token.SignedString(api.conf.JWTSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -132,7 +106,7 @@ func (api *API) handleLogin(c *gin.Context) {
 }
 
 func (api *API) handleRegister(c *gin.Context) {
-	logger := log.With(api.logger, "route", "register")
+	l := log.With(api.logger, "route", "register")
 	type input struct {
 		Name     string `json:"name" binding:"required"`
 		Phone    string `json:"phone" binding:"required"`
@@ -140,12 +114,18 @@ func (api *API) handleRegister(c *gin.Context) {
 	}
 	var i input
 
-	var tempID int
+	var tempUser models.User
 	err := c.BindJSON(&i)
 	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "all fields (name, phone, passowrd) are required",
+		})
 		return
 	}
-	level.Debug(logger).Log("name", i.Name, "phone", i.Phone)
+	level.Debug(l).Log("name", i.Name, "phone", i.Phone)
+
+	tempUser.Name = i.Name
+	tempUser.Verified = false
 
 	ph, err := parsePhone(i.Phone)
 	if err != nil {
@@ -157,9 +137,10 @@ func (api *API) handleRegister(c *gin.Context) {
 
 	i.Phone = ph
 	wappNumber := fmt.Sprintf("whatsapp:%s", ph)
-	level.Debug(logger).Log("parsedPhone", ph, "wappNumber", wappNumber)
+	level.Debug(l).Log("parsedPhone", ph, "wappNumber", wappNumber)
 
-	err = api.DB.QueryRow("SELECT id FROM users WHERE phone = ?", i.Phone).Scan(&tempID)
+	tempUser.Phone = ph
+	err = tempUser.GetUserByPhone(api.DB)
 
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -168,8 +149,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -181,53 +161,31 @@ func (api *API) handleRegister(c *gin.Context) {
 
 	hashByte, err := bcrypt.GenerateFromPassword([]byte(i.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	hash := string(hashByte)
+	tempUser.Hash = hash
 
-	level.Debug(logger).Log("verification code", code)
+	level.Debug(l).Log("verification code", code)
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec(
-		"INSERT INTO users(name, phone, hash, verified) VALUES (?, ?, ?, ?)",
-		i.Name,
-		i.Phone,
-		hash,
-		0,
-	)
+	uID, err := tempUser.InsertUser(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
-	uID, err := res.LastInsertId()
+	group := models.Group{Name: "default", UserID: int(uID)}
+	gID, err := group.NewGroup(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
-		return
-	}
-
-	groupRes, err := tx.Exec("INSERT INTO groups(userID, name) VALUES(?, ?)", uID, "default")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
-		return
-	}
-
-	gID, err := groupRes.LastInsertId()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -238,15 +196,13 @@ func (api *API) handleRegister(c *gin.Context) {
 		0,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
 	nID, err := numRes.LastInsertId()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -257,8 +213,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		oldTime,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -269,8 +224,7 @@ func (api *API) handleRegister(c *gin.Context) {
 		code,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -282,16 +236,14 @@ func (api *API) handleRegister(c *gin.Context) {
 	var buf bytes.Buffer
 	err = api.conf.VerifyTmpl.Execute(&buf, ti)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
-	level.Debug(logger).Log("message", buf.String())
+	level.Debug(l).Log("message", buf.String())
 
 	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, wappNumber, buf.String())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -306,7 +258,7 @@ func (api *API) handleRegister(c *gin.Context) {
 }
 
 func (api *API) handleUserVerify(c *gin.Context) {
-	logger := log.With(api.logger, "route", "userVerify")
+	l := log.With(api.logger, "route", "userVerify")
 
 	type input struct {
 		Phone string `json:"phone" binding:"required"`
@@ -315,7 +267,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 	var i input
 	err := c.BindJSON(&i)
 	if err != nil {
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -328,14 +280,10 @@ func (api *API) handleUserVerify(c *gin.Context) {
 	}
 
 	i.Phone = ph
-	level.Debug(logger).Log("phone", ph, "code", i.Code)
+	level.Debug(l).Log("phone", ph, "code", i.Code)
 
-	var tmpID int
-	var tmpVerified bool
-	err = api.DB.QueryRow(
-		"SELECT id, verified FROM users WHERE phone = ?",
-		i.Phone,
-	).Scan(&tmpID, &tmpVerified)
+	user := &models.User{Phone: ph}
+	err = user.GetUserByPhone(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -343,26 +291,22 @@ func (api *API) handleUserVerify(c *gin.Context) {
 			})
 			return
 		}
-		level.Error(logger).Log("err", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+		throwInternalError(c, l, err)
 		return
 	}
 
-	if tmpVerified {
+	if user.Verified {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "user is already verified",
 		})
 		return
 	}
 
-	var verify VerifyUser
-	err = api.DB.QueryRow(
-		"SELECT id, userID, numberID, code FROM userVerify WHERE userID = ?",
-		tmpID,
-	).Scan(&verify.ID, &verify.UserID, &verify.NumberID, &verify.Code)
+	verify := models.UserVerify{UserID: user.ID}
+
+	err = verify.GetUserVerifyByUserID(api.DB)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -375,55 +319,47 @@ func (api *API) handleUserVerify(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(
-		"UPDATE users SET verified = ? WHERE id = ?",
-		1,
-		tmpID,
-	)
+	user.Verified = true
+	_, err = user.UpdateUserByID(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
-	_, err = tx.Exec(
-		"UPDATE numbers SET verified = ? WHERE id = ?",
-		1,
-		verify.NumberID,
-	)
+	n := models.Number{ID: verify.NumberID}
+	err = n.GetNumberByID(api.DB)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
+		return
+	}
+	n.Verified = true
+	_, err = n.UpdateNumberByID(tx)
+	if err != nil {
+		throwInternalError(c, l, err)
 		return
 	}
 
-	_, err = tx.Exec(
-		"DELETE FROM userVerify WHERE userID = ?",
-		tmpID,
-	)
+	_, err = verify.DeleteUserVerifyByUserID(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
 	tx.Commit()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
-		"id":  tmpID,
+		"id":  user.ID,
 		"exp": time.Now().Add(time.Hour * 24 * 15).Unix(),
 	})
 
 	tokenStr, err := token.SignedString(api.conf.JWTSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 

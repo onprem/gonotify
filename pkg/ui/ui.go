@@ -57,6 +57,8 @@ func (bu *BaseUI) serveStatic() gin.HandlerFunc {
 		c.Status(http.StatusOK)
 		c.Writer.Header().Set("Content-Type", mimeType)
 		c.Writer.Write(data)
+
+		c.Abort()
 	}
 }
 

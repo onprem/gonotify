@@ -8,23 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/prmsrswt/gonotify/pkg/api/models"
 )
 
-// Number models the numbers table in database
-type Number struct {
-	ID       int    `json:"id"`
-	UserID   int    `json:"userID"`
-	Phone    string `json:"phone"`
-	Groups   int    `json:"groups"`
-	Verified bool   `json:"verified"`
-}
-
 func (api *API) queryNumbers(c *gin.Context) {
-	logger := log.With(api.logger, "route", "numbers")
+	l := log.With(api.logger, "route", "numbers")
 
 	uID := int(c.MustGet("id").(float64))
 
-	var numbers []Number
+	var numbers []models.Number
 
 	rows, err := api.DB.Query(
 		`SELECT numbers.id, numbers.userID, numbers.phone, numbers.verified, COUNT(whatsappNodes.groupID) as groups
@@ -35,19 +27,17 @@ func (api *API) queryNumbers(c *gin.Context) {
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var n Number
+		var n models.Number
 		err = rows.Scan(&n.ID, &n.UserID, &n.Phone, &n.Verified, &n.Groups)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-			level.Error(logger).Log("err", err)
+			throwInternalError(c, l, err)
 			return
 		}
 
@@ -60,7 +50,7 @@ func (api *API) queryNumbers(c *gin.Context) {
 }
 
 func (api *API) handleAddNumber(c *gin.Context) {
-	logger := log.With(api.logger, "route", "addNumber")
+	l := log.With(api.logger, "route", "addNumber")
 
 	type input struct {
 		Phone string `json:"phone" binding:"required"`
@@ -71,7 +61,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 
 	if err := c.ShouldBind(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "all fields are required",
+			"error": "field 'phone' is required",
 		})
 		return
 	}
@@ -84,12 +74,8 @@ func (api *API) handleAddNumber(c *gin.Context) {
 		return
 	}
 
-	var tmpNum int
-	err = api.DB.QueryRow(
-		`SELECT id FROM numbers WHERE phone = ? AND userID = ?`,
-		phone,
-		uID,
-	).Scan(&tmpNum)
+	num := models.Number{UserID: uID, Phone: phone}
+	err = num.GetNumberByPhoneUserID(api.DB)
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "phone already registered",
@@ -97,8 +83,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -106,28 +91,15 @@ func (api *API) handleAddNumber(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer tx.Rollback()
 
-	nRes, err := tx.Exec(
-		`INSERT INTO numbers(userID, phone, verified) VALUES(?, ?, ?)`,
-		uID,
-		phone,
-		0,
-	)
+	num.Verified = false
+	numID, err := num.NewNumber(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
-		return
-	}
-
-	numID, err := nRes.LastInsertId()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -137,8 +109,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 		code,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -151,16 +122,14 @@ func (api *API) handleAddNumber(c *gin.Context) {
 	var buf bytes.Buffer
 	err = api.conf.VerifyTmpl.Execute(&buf, ti)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
-	level.Debug(logger).Log("message", buf.String())
+	level.Debug(l).Log("message", buf.String())
 
 	err = api.TwilioClient.SendWhatsApp(api.conf.WhatsAppFrom, wappNumber, buf.String())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -172,7 +141,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 }
 
 func (api *API) handleVerifyNumber(c *gin.Context) {
-	logger := log.With(api.logger, "route", "verifyNumber")
+	l := log.With(api.logger, "route", "verifyNumber")
 
 	type input struct {
 		Phone string `json:"phone" binding:"required"`
@@ -184,7 +153,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 
 	if err := c.ShouldBind(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "all fields are required",
+			"error": "all fields (phone, code) are required",
 		})
 		return
 	}
@@ -197,12 +166,8 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		return
 	}
 
-	var num Number
-	err = api.DB.QueryRow(
-		`SELECT id, verified FROM numbers WHERE phone = ? AND userID = ?`,
-		phone,
-		uID,
-	).Scan(&num.ID, &num.Verified)
+	num := models.Number{UserID: uID, Phone: phone}
+	err = num.GetNumberByPhoneUserID(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -210,8 +175,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -237,20 +201,15 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(
-		`UPDATE numbers SET verified = ? WHERE id = ?`,
-		1,
-		num.ID,
-	)
+	num.Verified = true
+	_, err = num.UpdateNumberByID(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -259,8 +218,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		num.ID,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -272,7 +230,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 }
 
 func (api *API) handleRemoveNumber(c *gin.Context) {
-	logger := log.With(api.logger, "route", "removeNumber")
+	l := log.With(api.logger, "route", "removeNumber")
 
 	type input struct {
 		ID int `json:"id" binding:"required"`
@@ -283,17 +241,13 @@ func (api *API) handleRemoveNumber(c *gin.Context) {
 
 	if err := c.ShouldBind(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "all fields are required",
+			"error": "field 'id' is required",
 		})
 		return
 	}
 
-	var num Number
-	err := api.DB.QueryRow(
-		`SELECT id, phone FROM numbers WHERE id = ? AND userID = ?`,
-		i.ID,
-		uID,
-	).Scan(&num.ID, &num.Phone)
+	num := models.Number{ID: i.ID}
+	err := num.GetNumberByID(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -301,19 +255,21 @@ func (api *API) handleRemoveNumber(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
-	var user User
-	err = api.DB.QueryRow(
-		`SELECT phone FROM users WHERE id = ?`,
-		uID,
-	).Scan(&user.Phone)
+	if num.UserID != uID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "you are not authorized to delete this number",
+		})
+		return
+	}
+
+	user := models.User{ID: uID}
+	err = user.GetUserByID(api.DB)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -326,20 +282,14 @@ func (api *API) handleRemoveNumber(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(
-		`DELETE FROM numbers WHERE id = ? AND userID = ?`,
-		i.ID,
-		uID,
-	)
+	_, err = num.DeleteNumberByID(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -348,8 +298,7 @@ func (api *API) handleRemoveNumber(c *gin.Context) {
 		i.ID,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 

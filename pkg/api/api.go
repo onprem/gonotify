@@ -9,6 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/prmsrswt/gonotify/pkg/twilio"
 )
 
@@ -116,4 +117,9 @@ func handlePing(c *gin.Context) {
 		"message": "pong",
 		"id":      c.MustGet("id"),
 	})
+}
+
+func throwInternalError(c *gin.Context, l log.Logger, err error) {
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
+	level.Error(l).Log("err", err)
 }
