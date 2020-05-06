@@ -125,3 +125,29 @@ react-app-lint-fix:
 react-app-test: | $(REACT_APP_NODE_MODULES_PATH) react-app-lint
 	@echo ">> running React app tests"
 	cd $(REACT_APP_PATH) && export CI=true && yarn test --no-watch --coverage
+
+
+.PHONY: test
+test: ## Run all unit tests
+test:
+	@echo ">> running unit tests"
+	@go test ./...
+
+
+.PHONY: coverage
+coverage: ## Generate and open a HTML test coverage report
+coverage:
+	@echo ">> generating coverage report for all tests"
+	@go test -cover -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@xdg-open coverage.html
+
+
+.PHONY: clean
+clean: ## Deletes temporary files created by this Makefile's targets
+clean:
+	@echo ">> deleting files made by target 'coverage'"
+	@rm coverage.out || true
+	@rm coverage.html || true
+	@echo ">> deleting binaries"
+	@rm build/* || true

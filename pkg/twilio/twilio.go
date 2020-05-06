@@ -6,13 +6,15 @@ import "net/http"
 type Twilio struct {
 	AccountSID string
 	AuthToken  string
-	client     *http.Client
+	BaseURL    string
+	APIVersion string
+	Client     *http.Client
 }
 
 // NewClient creates a new Twilio client
 func NewClient(sid, token string) *Twilio {
 	client := &http.Client{}
-	return &Twilio{AccountSID: sid, AuthToken: token, client: client}
+	return &Twilio{AccountSID: sid, AuthToken: token, BaseURL: "https://api.twilio.com", APIVersion: "2010-04-01", Client: client}
 }
 
 func (t *Twilio) bootstrapRequest(r *http.Request) {

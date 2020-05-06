@@ -29,7 +29,7 @@ func (t *Twilio) SendWhatsApp(from, to, body string) error {
 	}
 
 	if resp["status"] == "failed" || resp["status"] == "undelivered" {
-		return fmt.Errorf("msg: %s code: %s", resp["error_message"], resp["error_code"])
+		return fmt.Errorf("msg: %s; code: %v", resp["error_message"], resp["error_code"])
 	}
 
 	return nil
