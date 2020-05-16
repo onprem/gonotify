@@ -183,24 +183,15 @@ func (api *API) handleRegister(c *gin.Context) {
 	}
 
 	group := models.Group{Name: "default", UserID: int(uID)}
-	gID, err := group.NewGroup(tx)
+	gID, err := group.New(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
 	}
 
-	numRes, err := tx.Exec(
-		"INSERT INTO numbers(phone, userID, verified) VALUES(?, ?, ?)",
-		i.Phone,
-		uID,
-		0,
-	)
-	if err != nil {
-		throwInternalError(c, l, err)
-		return
-	}
+	num := models.Number{Phone: i.Phone, UserID: int(uID), Verified: false}
 
-	nID, err := numRes.LastInsertId()
+	nID, err := num.New(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
@@ -217,12 +208,9 @@ func (api *API) handleRegister(c *gin.Context) {
 		return
 	}
 
-	_, err = tx.Exec(
-		"INSERT INTO userVerify(userID, numberID, code) VALUES(?, ?, ?)",
-		uID,
-		nID,
-		code,
-	)
+	nv := models.UserVerify{UserID: int(uID), NumberID: int(nID), Code: code}
+
+	_, err = nv.New(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
@@ -304,7 +292,7 @@ func (api *API) handleUserVerify(c *gin.Context) {
 
 	verify := models.UserVerify{UserID: user.ID}
 
-	err = verify.GetUserVerifyByUserID(api.DB)
+	err = verify.GetByUserID(api.DB)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
@@ -332,19 +320,19 @@ func (api *API) handleUserVerify(c *gin.Context) {
 	}
 
 	n := models.Number{ID: verify.NumberID}
-	err = n.GetNumberByID(api.DB)
+	err = n.GetByID(api.DB)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
 	}
 	n.Verified = true
-	_, err = n.UpdateNumberByID(tx)
+	_, err = n.UpdateByID(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
 	}
 
-	_, err = verify.DeleteUserVerifyByUserID(tx)
+	_, err = verify.DeleteByUserID(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return

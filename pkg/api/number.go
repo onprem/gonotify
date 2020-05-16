@@ -75,7 +75,7 @@ func (api *API) handleAddNumber(c *gin.Context) {
 	}
 
 	num := models.Number{UserID: uID, Phone: phone}
-	err = num.GetNumberByPhoneUserID(api.DB)
+	err = num.GetByPhoneUserID(api.DB)
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "phone already registered",
@@ -97,17 +97,14 @@ func (api *API) handleAddNumber(c *gin.Context) {
 	defer tx.Rollback()
 
 	num.Verified = false
-	numID, err := num.NewNumber(tx)
+	_, err = num.New(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO numberVerify(numberID, code) VALUES(?, ?)`,
-		numID,
-		code,
-	)
+	numVerify := models.NumberVerify{NumberID: num.ID, Code: code}
+	_, err = numVerify.New(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
@@ -167,7 +164,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 	}
 
 	num := models.Number{UserID: uID, Phone: phone}
-	err = num.GetNumberByPhoneUserID(api.DB)
+	err = num.GetByPhoneUserID(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -186,13 +183,14 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		return
 	}
 
-	var verifyCode string
-	err = api.DB.QueryRow(
-		`SELECT code FROM numberVerify WHERE numberID = ?`,
-		num.ID,
-	).Scan(&verifyCode)
+	verify := models.NumberVerify{NumberID: num.ID}
+	err = verify.GetByNumberID(api.DB)
+	if err != nil {
+		throwInternalError(c, l, err)
+		return
+	}
 
-	if i.Code != verifyCode {
+	if i.Code != verify.Code {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid verification code",
 		})
@@ -207,16 +205,13 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 	defer tx.Rollback()
 
 	num.Verified = true
-	_, err = num.UpdateNumberByID(tx)
+	_, err = num.UpdateByID(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
 	}
 
-	_, err = tx.Exec(
-		`DELETE FROM numberVerify WHERE numberID = ?`,
-		num.ID,
-	)
+	_, err = num.DeleteByID(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
@@ -247,7 +242,7 @@ func (api *API) handleRemoveNumber(c *gin.Context) {
 	}
 
 	num := models.Number{ID: i.ID}
-	err := num.GetNumberByID(api.DB)
+	err := num.GetByID(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -287,7 +282,7 @@ func (api *API) handleRemoveNumber(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	_, err = num.DeleteNumberByID(tx)
+	_, err = num.DeleteByID(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return

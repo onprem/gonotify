@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/prmsrswt/gonotify/pkg/api/models"
 )
 
 // Group represents a group of nodes
@@ -96,7 +97,7 @@ func (api *API) queryGroups(c *gin.Context) {
 }
 
 func (api *API) handleAddGroup(c *gin.Context) {
-	logger := log.With(api.logger, "route", "addGroup")
+	l := log.With(api.logger, "route", "addGroup")
 
 	type input struct {
 		Name string `json:"name" binding:"required,alpha"`
@@ -114,12 +115,9 @@ func (api *API) handleAddGroup(c *gin.Context) {
 
 	i.Name = strings.ToLower(i.Name)
 
-	var tmpID int
-	err := api.DB.QueryRow(
-		`SELECT id FROM groups WHERE name = ? AND userID = ?`,
-		i.Name,
-		uID,
-	).Scan(&tmpID)
+	gp := models.Group{Name: i.Name, UserID: uID}
+
+	err := gp.GetByNameUserID(api.DB)
 	if err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "group already exists",
@@ -127,19 +125,13 @@ func (api *API) handleAddGroup(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
-	_, err = api.DB.Exec(
-		`INSERT INTO groups(userID, name) VALUES(?, ?)`,
-		uID,
-		i.Name,
-	)
+	_, err = models.WithDB(api.DB, gp.New)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -149,7 +141,7 @@ func (api *API) handleAddGroup(c *gin.Context) {
 }
 
 func (api *API) handleRemoveGroup(c *gin.Context) {
-	logger := log.With(api.logger, "route", "removeGroup")
+	l := log.With(api.logger, "route", "removeGroup")
 
 	type input struct {
 		ID int `json:"id" binding:"required"`
@@ -165,12 +157,8 @@ func (api *API) handleRemoveGroup(c *gin.Context) {
 		return
 	}
 
-	var group Group
-	err := api.DB.QueryRow(
-		`SELECT id, name FROM groups WHERE id = ? AND userID = ?`,
-		i.ID,
-		uID,
-	).Scan(&group.ID, &group.Name)
+	group := models.Group{ID: i.ID}
+	err := group.GetByID(api.DB)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -178,8 +166,14 @@ func (api *API) handleRemoveGroup(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
+		return
+	}
+
+	if group.UserID != uID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "not authorized",
+		})
 		return
 	}
 
@@ -192,20 +186,14 @@ func (api *API) handleRemoveGroup(c *gin.Context) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(
-		`DELETE FROM groups WHERE id = ? AND userID = ?`,
-		i.ID,
-		uID,
-	)
+	_, err = group.DeleteByID(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 
@@ -214,8 +202,7 @@ func (api *API) handleRemoveGroup(c *gin.Context) {
 		i.ID,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "some error occured"})
-		level.Error(logger).Log("err", err)
+		throwInternalError(c, l, err)
 		return
 	}
 

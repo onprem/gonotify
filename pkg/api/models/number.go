@@ -2,6 +2,7 @@ package models
 
 import "database/sql"
 
+// Number represnts a phone number
 type Number struct {
 	ID       int    `json:"id"`
 	UserID   int    `json:"userID"`
@@ -10,8 +11,8 @@ type Number struct {
 	Groups   int    `json:"groups"`
 }
 
-// NewNumber adds a new number in database
-func (n *Number) NewNumber(tx *sql.Tx) (int64, error) {
+// New adds a new number in database
+func (n *Number) New(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
 		`INSERT INTO numbers(userID, phone, verified) VALUES (?, ?, ?)`,
 		n.UserID,
@@ -26,19 +27,20 @@ func (n *Number) NewNumber(tx *sql.Tx) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	n.ID = int(id)
 	return id, nil
 }
 
-// GetNumberByID returns a user given it's ID
-func (n *Number) GetNumberByID(db *sql.DB) error {
+// GetByID returns a user given it's ID
+func (n *Number) GetByID(db *sql.DB) error {
 	return db.QueryRow(
 		`SELECT userID, phone, verified FROM numbers WHERE id = ?`,
 		n.ID,
 	).Scan(&n.UserID, &n.Phone, &n.Verified)
 }
 
-// GetNumberByPhoneUserID returns a user given it's ID
-func (n *Number) GetNumberByPhoneUserID(db *sql.DB) error {
+// GetByPhoneUserID returns a user given it's ID
+func (n *Number) GetByPhoneUserID(db *sql.DB) error {
 	return db.QueryRow(
 		`SELECT id, verified FROM numbers WHERE userID = ? AND phone = ?`,
 		n.UserID,
@@ -46,7 +48,8 @@ func (n *Number) GetNumberByPhoneUserID(db *sql.DB) error {
 	).Scan(&n.ID, &n.Verified)
 }
 
-func (n *Number) UpdateNumberByID(tx *sql.Tx) (int64, error) {
+// UpdateByID updates a number given it's ID
+func (n *Number) UpdateByID(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
 		`UPDATE numbers SET userID = ?, phone = ?, verified = ? WHERE id = ?`,
 		n.UserID,
@@ -65,7 +68,8 @@ func (n *Number) UpdateNumberByID(tx *sql.Tx) (int64, error) {
 	return id, nil
 }
 
-func (n *Number) DeleteNumberByID(tx *sql.Tx) (int64, error) {
+// DeleteByID deletes a number given it's ID
+func (n *Number) DeleteByID(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(`DELETE FROM numbers WHERE id = ?`, n.ID)
 	if err != nil {
 		return 0, err

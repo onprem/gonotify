@@ -9,8 +9,8 @@ type Group struct {
 	UserID int    `json:"userID"`
 }
 
-// NewGroup creates a new group in database
-func (g *Group) NewGroup(tx *sql.Tx) (int64, error) {
+// New creates a new group in database
+func (g *Group) New(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
 		`INSERT INTO groups(name, userID) VALUES (?, ?)`,
 		g.Name,
@@ -25,21 +25,41 @@ func (g *Group) NewGroup(tx *sql.Tx) (int64, error) {
 		return 0, err
 	}
 
+	g.ID = int(id)
 	return id, nil
 }
 
-// GetGroupByID returns a group given it's ID
-func (g *Group) GetGroupByID(db *sql.DB) error {
+// GetByID returns a group given it's ID
+func (g *Group) GetByID(db *sql.DB) error {
 	return db.QueryRow(
 		`SELECT name, userID FROM groups WHERE id = ?`,
 		g.ID,
 	).Scan(&g.Name, &g.UserID)
 }
 
-// GetGroupByUserID returns a group given it's userID
-func (g *Group) GetGroupByUserID(db *sql.DB) error {
+// GetByNameUserID returns a group given it's userID
+func (g *Group) GetByNameUserID(db *sql.DB) error {
 	return db.QueryRow(
-		`SELECT id, name FROM groups WHERE userID = ?`,
+		`SELECT id, name FROM groups WHERE name = ? AND userID = ?`,
+		g.Name,
 		g.UserID,
 	).Scan(&g.ID, &g.Name)
+}
+
+// DeleteByID delets the Group using given ID
+func (g *Group) DeleteByID(tx *sql.Tx) (int64, error) {
+	res, err := tx.Exec(
+		`DELETE FROM groups WHERE id = ?`,
+		g.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
 }

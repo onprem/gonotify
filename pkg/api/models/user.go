@@ -30,6 +30,8 @@ func (u *User) InsertUser(tx *sql.Tx) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	u.ID = int(id)
 	return id, nil
 }
 

@@ -10,8 +10,8 @@ type UserVerify struct {
 	Code     string
 }
 
-// NewUserVerify creates a new userVerify entry in DB
-func (uv *UserVerify) NewUserVerify(tx *sql.Tx) (int64, error) {
+// New creates a new userVerify entry in DB
+func (uv *UserVerify) New(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
 		`INSERT INTO verifyUser(userID, numberID, code) VALUES(?, ?, ?)`,
 		uv.UserID,
@@ -27,30 +27,31 @@ func (uv *UserVerify) NewUserVerify(tx *sql.Tx) (int64, error) {
 		return 0, err
 	}
 
+	uv.ID = int(id)
 	return id, nil
 }
 
-// GetUserVerifyByID returns user verification data using
+// GetByID returns user verification data using
 // given ID
-func (uv *UserVerify) GetUserVerifyByID(db *sql.DB) error {
+func (uv *UserVerify) GetByID(db *sql.DB) error {
 	return db.QueryRow(
 		`SELECT userID, numberID, code FROM userVerify WHERE id = ?`,
 		uv.ID,
 	).Scan(&uv.UserID, &uv.NumberID, &uv.Code)
 }
 
-// GetUserVerifyByUserID returns user verification data using
+// GetByUserID returns user verification data using
 // given UserID
-func (uv *UserVerify) GetUserVerifyByUserID(db *sql.DB) error {
+func (uv *UserVerify) GetByUserID(db *sql.DB) error {
 	return db.QueryRow(
 		`SELECT id, numberID, code FROM userVerify WHERE userID = ?`,
 		uv.UserID,
 	).Scan(&uv.ID, &uv.NumberID, &uv.Code)
 }
 
-// DeleteUserVerifyByID deletes user verification entry by using
+// DeleteByID deletes user verification entry by using
 // given ID
-func (uv *UserVerify) DeleteUserVerifyByID(tx *sql.Tx) (int64, error) {
+func (uv *UserVerify) DeleteByID(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
 		`DELETE FROM userVerify WHERE id = ?`,
 		uv.ID,
@@ -67,9 +68,9 @@ func (uv *UserVerify) DeleteUserVerifyByID(tx *sql.Tx) (int64, error) {
 	return rows, nil
 }
 
-// DeleteUserVerifyByUserID deletes user verification entry by using
+// DeleteByUserID deletes user verification entry by using
 // given userID
-func (uv *UserVerify) DeleteUserVerifyByUserID(tx *sql.Tx) (int64, error) {
+func (uv *UserVerify) DeleteByUserID(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
 		`DELETE FROM userVerify WHERE userID = ?`,
 		uv.UserID,
