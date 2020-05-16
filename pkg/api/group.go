@@ -206,6 +206,15 @@ func (api *API) handleRemoveGroup(c *gin.Context) {
 		return
 	}
 
+	_, err = tx.Exec(
+		`DELETE FROM notifications WHERE groupID = ?`,
+		i.ID,
+	)
+	if err != nil {
+		throwInternalError(c, l, err)
+		return
+	}
+
 	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{
