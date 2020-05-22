@@ -13,7 +13,7 @@ type UserVerify struct {
 // New creates a new userVerify entry in DB
 func (uv *UserVerify) New(tx *sql.Tx) (int64, error) {
 	res, err := tx.Exec(
-		`INSERT INTO verifyUser(userID, numberID, code) VALUES(?, ?, ?)`,
+		`INSERT INTO userVerify(userID, numberID, code) VALUES(?, ?, ?)`,
 		uv.UserID,
 		uv.NumberID,
 		uv.Code,
