@@ -211,7 +211,7 @@ func (api *API) handleVerifyNumber(c *gin.Context) {
 		return
 	}
 
-	_, err = num.DeleteByID(tx)
+	_, err = verify.DeleteByID(tx)
 	if err != nil {
 		throwInternalError(c, l, err)
 		return
